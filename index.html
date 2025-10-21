@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #4689cc; -webkit-text-stroke: #4689cc; background-color: #171818}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 14.0px Menlo; color: #4689cc; -webkit-text-stroke: #4689cc; background-color: #171818; min-height: 16.0px}
+    span.s1 {font-kerning: none}
+  </style>
+</head>
+<body>
+<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;html lang="en"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;head&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;title&gt;District-Wide Assessment Calendar &amp; Visualizer&lt;/title&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://d3js.org/d3.v7.min.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/save-svg-as-png/1.4.17/saveSvgAsPng.min.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;style&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>body {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-family: 'Inter', sans-serif;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background-color: #f8fafc;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.tooltip {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>position: absolute; text-align: left; padding: 10px 15px; font-size: 13px;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: rgba(30, 41, 59, 0.95); color: white; border-radius: 8px;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>pointer-events: none; opacity: 0; transition: opacity 0.2s; max-width: 300px; line-height: 1.6;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.tooltip a { color: #60a5fa; text-decoration: underline; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.tooltip strong { color: #f59e0b; font-weight: 600; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.gantt-chart-container { width: 100%; overflow-x: auto; background-color: #ffffff; padding: 1rem 0; border-radius: 1rem; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.export-btn, .action-btn {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>padding: 8px 16px; border: none; border-radius: 8px; color: white;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>font-weight: 500; cursor: pointer; transition: background-color 0.2s;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.export-btn:hover, .action-btn:hover { opacity: 0.9; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>#setup-modal {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>background: rgba(0, 0, 0, 0.5);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>transition: opacity 0.3s ease-in-out;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.modal-content {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>height: 90vh;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>max-height: 800px;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.modal-content::-webkit-scrollbar { width: 8px; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.modal-content::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 10px; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.modal-content::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.modal-content::-webkit-scrollbar-thumb:hover { background: #64748b; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.date-input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>.hidden { display: none; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;body class="text-slate-800"&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;!-- Setup Modal --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="setup-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col modal-content"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="p-6 border-b"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;h2 class="text-2xl font-bold text-slate-700"&gt;Create Your Assessment Calendar&lt;/h2&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;p class="text-slate-500"&gt;Select grades, assessments, and holidays to build your custom visualization.&lt;/p&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="p-6 overflow-y-auto flex-grow"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;!-- Step 1: Grades --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="mb-8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;h3 class="font-semibold text-lg mb-3 text-slate-600"&gt;1. Select Grade Levels&lt;/h3&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div id="grade-filters" class="grid grid-cols-4 sm:grid-cols-7 gap-3 text-sm"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;!-- Step 2: Assessments --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="mb-8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;h3 class="font-semibold text-lg mb-3 text-slate-600"&gt;2. Select District &amp; State Assessments&lt;/h3&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div id="assessment-filters" class="space-y-4"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>&lt;!-- Step 3: Local Assessments --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div class="mb-8"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;h3 class="font-semibold text-lg mb-3 text-slate-600"&gt;3. Add Local / Custom Assessments&lt;/h3&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                     </span>&lt;label class="flex items-center cursor-pointer mb-4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;input type="checkbox" id="include-local-assessments" class="h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;span class="ml-2"&gt;Include Local / Custom Assessments&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div id="local-assessments-container" class="hidden"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div class="flex flex-col md:flex-row gap-3 items-center"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;input type="text" id="other-assessment-name" placeholder="E.g., Unit 1 Math Test" class="date-input w-full md:w-1/2"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;input type="date" id="other-assessment-start" class="date-input w-full md:w-1/4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;input type="date" id="other-assessment-end" class="date-input w-full md:w-1/4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;button id="add-other-btn" class="action-btn bg-[#0072b8] whitespace-nowrap px-4 py-2 text-sm w-full md:w-auto"&gt;Add&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div id="other-assessments-list" class="mt-3 text-sm text-slate-600 space-y-1"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;!-- Step 4: Holidays --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;h3 class="font-semibold text-lg mb-3 text-slate-600"&gt;4. Configure Holidays&lt;/h3&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;label class="flex items-center cursor-pointer mb-4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;input type="checkbox" id="include-holidays" class="h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;span class="ml-2"&gt;Include Religious Holidays&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;div id="holiday-filters-container" class="hidden"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;h4 class="font-medium mb-2 text-slate-500"&gt;Select Religions to Display:&lt;/h4&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div id="holiday-filters" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="p-6 bg-slate-50 border-t rounded-b-2xl"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;button id="generate-calendar-btn" class="action-btn bg-[#8cc63f] w-full text-lg py-3"&gt;Generate Calendar&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;!-- Main Content (Initially Hidden) --&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div id="main-content" class="container mx-auto p-4 md:p-8 hidden"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;header class="flex flex-col sm:flex-row items-center justify-between mb-8 pb-4 border-b border-slate-200"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="flex items-center gap-4"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;img src="https://kentisd-cdn.fxbrt.com/downloads/about_kent_isd/kentisd-final-logos_primary-logo-gradient-tag.png" alt="Kent ISD Logo" class="h-14 md:h-16"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;h1 class="text-2xl md:text-3xl font-bold text-slate-700"&gt;District-Wide Assessment Calendar&lt;/h1&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>&lt;p class="text-sm md:text-base text-slate-500"&gt;2025-2026 Academic Year&lt;/p&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div class="flex gap-3 mt-4 sm:mt-0"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>&lt;button id="reconfigure-btn" class="action-btn bg-slate-500"&gt;Re-configure&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;button id="save-png-btn" class="export-btn bg-[#0072b8]"&gt;Save as PNG&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;button id="save-pdf-btn" class="export-btn bg-[#8cc63f]"&gt;Save as PDF&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/header&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;main&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>&lt;div id="visualization" class="gantt-chart-container shadow-lg"&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>&lt;/main&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">    </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="tooltip"&gt;&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const { jsPDF } = window.jspdf;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const categorizedAssessments = {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>"State Mandated": [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'mstep_ela_math', grade: '3-7', name: 'M-STEP (ELA, Math)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math', duration: 'Varies, approx. 1-2.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'mstep_sci_ss', grade: '5, 8, 11', name: 'M-STEP (Science, SS)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'Science, Social Studies', duration: 'Varies, approx. 1-1.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>"College Readiness &amp; Career": [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'psat89_fall', grade: '8', name: 'PSAT 8/9 (Fall)', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9/preparing/parent-tutorial' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'psat_nmsqt', grade: '10', name: 'PSAT/NMSQT', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-nmsqt/preparing/parent-perspectives' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'sat_essay', grade: '11', name: 'SAT with Essay', category: 'College Readiness', startDate: '2026-04-14', endDate: '2026-04-16', subject: 'Reading, Writing, Math, Essay', duration: 'Approx. 3 hours 50 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/sat' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'act_workkeys', grade: '11', name: 'ACT WorkKeys', category: 'Career Readiness', startDate: '2026-04-14', endDate: '2026-04-16', subject: 'Applied Math, Graphic Literacy, Workplace Docs', duration: 'Approx. 3 hours', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/workkeys' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'win_workplace', grade: '11', name: 'WIN Workplace Assessment', category: 'Career Readiness', subject: 'Career Readiness Skills', duration: 'Varies' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'psat89_spring', grade: '8', name: 'PSAT 8/9 (Spring)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'psat_spring', grade: '9-10', name: 'PSAT (Spring)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-10' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>"Universal Screeners &amp; Benchmarks": [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>{ id: 'elm_fall', grade: 'K', name: 'Early Literacy &amp; Math (Fall)', category: 'Benchmark', startDate: '2025-08-25', endDate: '2025-10-24', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'nwea_fall', grade: 'K-11', name: 'NWEA MAP Growth (Fall)', category: 'Benchmark', startDate: '2025-09-02', endDate: '2025-09-26', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'nwea_winter', grade: 'K-11', name: 'NWEA MAP Growth (Winter)', category: 'Benchmark', startDate: '2026-01-05', endDate: '2026-01-30', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'nwea_spring', grade: 'K-8', name: 'NWEA MAP Growth (Spring)', category: 'Benchmark', startDate: '2026-05-04', endDate: '2026-05-29', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'dibels', grade: 'K-3', name: 'DIBELS', category: 'Benchmark', subject: 'Early Literacy', duration: 'Approx. 5-10 mins'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'fastbridge', grade: 'K-12', name: 'FastBridge', category: 'Benchmark', subject: 'Reading, Math, Behavior', duration: 'Varies by module'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'iready', grade: 'K-8', name: 'i-Ready Diagnostic', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 45-60 mins per subject'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'star', grade: 'K-12', name: 'STAR Reading/Math', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 20-30 mins'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'aimsweb', grade: 'K-12', name: 'AIMSwebPlus', category: 'Benchmark', subject: 'Reading, Math', duration: 'Varies by measure'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>"English Language Proficiency": [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>{ id: 'wida_screener', grade: 'K-12', name: 'WIDA Screener', category: 'English Learner', startDate: '2025-08-25', endDate: '2026-05-22', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://wida.wisc.edu/assess/screener' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'wida_access', grade: 'K-12', name: 'WIDA ACCESS', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>"Alternate Assessments": [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>{ id: 'mi_access', grade: '3-8, 11', name: 'MI-Access', category: 'Alternate Assessment', subject: 'ELA, Math, Science, SS', duration: 'Varies by student'},</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>]</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>};</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const allAssessments = Object.values(categorizedAssessments).flat();</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>const holidayData = [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>// Using arrays for religions now</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Rosh Hashanah', religions: ['Jewish'], startDate: '2025-09-22', endDate: '2025-09-24' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Yom Kippur', religions: ['Jewish'], startDate: '2025-10-01', endDate: '2025-10-02' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Diwali', religions: ['Hindu', 'Sikh', 'Jain'], startDate: '2025-10-21', endDate: '2025-10-21' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Christmas', religions: ['Christian'], startDate: '2025-12-25', endDate: '2025-12-25' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Hanukkah', religions: ['Jewish'], startDate: '2025-12-14', endDate: '2025-12-22' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Orthodox Christmas', religions: ['Orthodox Christian'], startDate: '2026-01-07', endDate: '2026-01-07' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Lunar New Year', religions: ['East Asian'], startDate: '2026-02-17', endDate: '2026-02-17' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Ramadan Begins', religions: ['Muslim'], startDate: '2026-02-18', endDate: '2026-02-18' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Eid al-Fitr', religions: ['Muslim'], startDate: '2026-03-20', endDate: '2026-03-20' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Good Friday', religions: ['Christian'], startDate: '2026-04-03', endDate: '2026-04-03' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Passover', religions: ['Jewish'], startDate: '2026-04-01', endDate: '2026-04-09' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Easter', religions: ['Christian'], startDate: '2026-04-05', endDate: '2026-04-05' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Orthodox Easter', religions: ['Orthodox Christian'], startDate: '2026-04-12', endDate: '2026-04-12' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>{ name: 'Vaisakhi', religions: ['Sikh', 'Hindu'], startDate: '2026-04-13', endDate: '2026-04-13' },</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>];</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>let otherAssessments = [];</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>document.addEventListener('DOMContentLoaded', () =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>populateModalFilters();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>setupEventListeners();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function populateModalFilters() {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const gradeFilters = document.getElementById('grade-filters');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const assessmentFilters = document.getElementById('assessment-filters');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const holidayFilters = document.getElementById('holiday-filters');</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const grades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>grades.forEach(g =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>gradeFilters.innerHTML += `&lt;label class="flex items-center cursor-pointer text-slate-700"&gt;&lt;input type="checkbox" class="grade-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${g}"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;span class="ml-2"&gt;${g}&lt;/span&gt;&lt;/label&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>for (const category in categorizedAssessments) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>let categoryHtml = `&lt;div class="mb-3"&gt;&lt;h4 class="font-medium text-md text-slate-500 mb-2"&gt;${category}&lt;/h4&gt;&lt;div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3"&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>categorizedAssessments[category].forEach(a =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const hasDate = a.startDate &amp;&amp; a.endDate;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const dateInputs = hasDate ? '' : `</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div class="assessment-date-inputs hidden pl-6 mt-1 flex items-center gap-2"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;input type="date" id="start-${a.id}" class="date-input text-sm"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;span class="text-slate-400"&gt;-&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;input type="date" id="end-${a.id}" class="date-input text-sm"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>categoryHtml += `</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;label class="flex items-center cursor-pointer text-slate-700"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;input type="checkbox" class="assessment-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${a.id}"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                                </span>&lt;span class="ml-2"&gt;${a.name} (Grades: ${a.grade})&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                            </span>${dateInputs}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>categoryHtml += `&lt;/div&gt;&lt;/div&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>assessmentFilters.innerHTML += categoryHtml;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const holidayReligions = [...new Set(holidayData.flatMap(d =&gt; d.religions))];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>holidayReligions.forEach(r =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>holidayFilters.innerHTML += `&lt;label class="flex items-center cursor-pointer text-slate-700"&gt;&lt;input type="checkbox" class="holiday-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${r}"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>&lt;span class="ml-2"&gt;${r}&lt;/span&gt;&lt;/label&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function setupEventListeners(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>// Modal event listeners</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('include-local-assessments').addEventListener('change', (e) =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById('local-assessments-container').classList.toggle('hidden', !e.target.checked);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('include-holidays').addEventListener('change', (e) =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById('holiday-filters-container').classList.toggle('hidden', !e.target.checked);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('assessment-filters').addEventListener('change', (e) =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (e.target.classList.contains('assessment-filter')) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const dateInputs = e.target.closest('div').querySelector('.assessment-date-inputs');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (dateInputs) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>dateInputs.classList.toggle('hidden', !e.target.checked);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('add-other-btn').addEventListener('click', () =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const nameInput = document.getElementById('other-assessment-name');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const startInput = document.getElementById('other-assessment-start');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const endInput = document.getElementById('other-assessment-end');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (nameInput.value &amp;&amp; startInput.value &amp;&amp; endInput.value) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>otherAssessments.push({</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>name: nameInput.value,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>startDate: startInput.value,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>endDate: endInput.value,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>category: 'Local/Custom',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>type: 'assessment',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>grade: 'Custom'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>});</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>nameInput.value = '';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>startInput.value = '';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>endInput.value = '';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>renderOtherAssessmentsList();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>} else {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>alert('Please provide a name, start date, and end date for the custom assessment.');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('generate-calendar-btn').addEventListener('click', () =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>updateVisualization();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById('setup-modal').classList.add('hidden');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById('main-content').classList.remove('hidden');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>// Main content event listeners</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('reconfigure-btn').addEventListener('click', () =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>document.getElementById('setup-modal').classList.remove('hidden');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>document.getElementById('main-content').classList.add('hidden');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>});</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('save-png-btn').addEventListener('click', () =&gt; saveAsPng());</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>document.getElementById('save-pdf-btn').addEventListener('click', () =&gt; saveAsPdf());</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function renderOtherAssessmentsList() {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const listEl = document.getElementById('other-assessments-list');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>listEl.innerHTML = otherAssessments.map(a =&gt; `&lt;div class="bg-slate-100 p-2 rounded"&gt;✓ ${a.name} (${a.startDate} to ${a.endDate})&lt;/div&gt;`).join('');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function parseGrade(gradeStr) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (!gradeStr) return [];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (gradeStr.includes('-')) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const parts = gradeStr.split('-');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const start = parts[0] === 'K' ? 0 : parseInt(parts[0]);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const end = parseInt(parts[1]);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>let grades = [];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>for (let i = start; i &lt;= end; i++) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>grades.push(i === 0 ? 'K' : i.toString());</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return grades;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (gradeStr.toLowerCase() === 'all' || gradeStr.toLowerCase() === 'k-12') {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return gradeStr.split(',').map(s =&gt; s.trim());</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function updateVisualization() {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const selectedGrades = Array.from(document.querySelectorAll('.grade-filter:checked')).map(el =&gt; el.value);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const selectedAssessmentIds = Array.from(document.querySelectorAll('.assessment-filter:checked')).map(el =&gt; el.value);</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let filteredAssessments = allAssessments.filter(a =&gt; selectedAssessmentIds.includes(a.id)).map(a =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>if (!a.startDate) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const startDate = document.getElementById(`start-${a.id}`).value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>const endDate = document.getElementById(`end-${a.id}`).value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (startDate &amp;&amp; endDate) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>return {...a, startDate, endDate};</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>return null;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return a;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}).filter(Boolean);</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>let finalData = filteredAssessments.filter(d =&gt; {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const itemGrades = parseGrade(d.grade);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return selectedGrades.some(sg =&gt; itemGrades.includes(sg));</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}).map(d =&gt; ({...d, type: 'assessment'}));</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const includeLocal = document.getElementById('include-local-assessments').checked;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (includeLocal) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                 </span>finalData = [...finalData, ...otherAssessments];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const includeHolidays = document.getElementById('include-holidays').checked;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (includeHolidays) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const selectedReligions = Array.from(document.querySelectorAll('.holiday-filter:checked')).map(el =&gt; el.value);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>const filteredHolidays = holidayData</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>.filter(d =&gt; d.religions.some(r =&gt; selectedReligions.includes(r)))</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>.map(d =&gt; ({...d, name: d.name, type: 'holiday'}));</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>finalData = [...finalData, ...filteredHolidays];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>finalData.sort((a, b) =&gt; new Date(a.startDate) - new Date(b.startDate));</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>renderGanttChart(finalData);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function renderGanttChart(data) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const container = d3.select("#visualization");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>container.html("");</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>if (data.length === 0) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>container.append("div").attr("class", "text-center p-10 text-slate-500").text("No data to display. Click 'Re-configure' to change selections.");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const margin = { top: 50, right: 30, bottom: 40, left: 220 };</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const containerWidth = document.getElementById('visualization').clientWidth;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const width = Math.max(containerWidth, 900) - margin.left - margin.right;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const itemHeight = 30;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const itemMargin = 10;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const height = data.length * (itemHeight + itemMargin);</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const svg = container.append("svg")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("width", width + margin.left + margin.right)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("height", height + margin.top + margin.bottom)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.append("g")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("transform", `translate(${margin.left},${margin.top})`);</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const timeDomain = [new Date('2025-08-01'), new Date('2026-06-30')];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const xScale = d3.scaleTime().domain(timeDomain).range([0, width]);</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>svg.append("g").call(d3.axisTop(xScale).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%B"))).selectAll("text").style("font-size", "12px").style("color", "#475569");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>svg.append("g").attr("class", "grid-lines").selectAll("line").data(xScale.ticks(d3.timeMonth.every(1))).enter().append("line").attr("x1", d =&gt; xScale(d)).attr("x2", d =&gt; xScale(d)).attr("y1", 0).attr("y2", height).attr("stroke", "#e2e8f0").attr("stroke-width", 1);</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const tooltip = d3.select(".tooltip");</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">            </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const kentISDPalette = ['#0072b8', '#8cc63f', '#f58220', '#41b6e6', '#004b8d', '#a9a9a9', '#d45d00'];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const categoryDomains = [...new Set(allAssessments.map(d =&gt; d.category)), 'Local/Custom'];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>const colorScale = d3.scaleOrdinal().domain(categoryDomains).range(kentISDPalette);</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>svg.selectAll(".bar-group").data(data).enter().append("g")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("transform", (d, i) =&gt; `translate(0, ${i * (itemHeight + itemMargin)})`)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.append("rect")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("x", d =&gt; xScale(new Date(d.startDate)))</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("width", d =&gt; Math.max(2, xScale(new Date(d.endDate)) - xScale(new Date(d.startDate))))</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("height", itemHeight).attr("rx", 5).attr("ry", 5)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.style("fill", d =&gt; d.type === 'holiday' ? '#64748b' : colorScale(d.category))</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.style("opacity", 0.9)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.on("mouseover", function(event, d) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>d3.select(this).style("opacity", 1);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>tooltip.transition().duration(200).style("opacity", 1);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>let tooltipContent = `&lt;strong&gt;${d.name}&lt;/strong&gt;&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.grade &amp;&amp; d.grade !== 'Custom') tooltipContent += `&lt;strong&gt;Grade(s):&lt;/strong&gt; ${d.grade}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.category) tooltipContent += `&lt;strong&gt;Category:&lt;/strong&gt; ${d.category}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.subject) tooltipContent += `&lt;strong&gt;Subject:&lt;/strong&gt; ${d.subject}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.duration) tooltipContent += `&lt;strong&gt;Duration:&lt;/strong&gt; ${d.duration}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.religions) tooltipContent += `&lt;strong&gt;Observed by:&lt;/strong&gt; ${d.religions.join(', ')}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>tooltipContent += `&lt;strong&gt;Window:&lt;/strong&gt; ${new Date(d.startDate).toLocaleDateString()} - ${new Date(d.endDate).toLocaleDateString()}&lt;br/&gt;`;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>if (d.resourceLink) tooltipContent += `&lt;a href="${d.resourceLink}" target="_blank"&gt;MDE Parent Resources&lt;/a&gt;`;</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">                    </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>tooltip.html(tooltipContent)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.style("left", (event.pageX + 15) + "px")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                        </span>.style("top", (event.pageY - 28) + "px");</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>})</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.on("mouseout", function(d) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>d3.select(this).style("opacity", 0.9);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>tooltip.transition().duration(500).style("opacity", 0);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>svg.selectAll(".item-label").data(data).enter().append("text")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("x", -15).attr("y", (d, i) =&gt; i * (itemHeight + itemMargin) + itemHeight / 2)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.attr("dy", "0.35em").attr("text-anchor", "end").style("font-size", "12px")</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.style("fill", "#334155").text(d =&gt; d.name)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>.call(wrap, margin.left - 25);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>}</span></p>
+<p class="p2"><span class="s1"><span class="Apple-converted-space">        </span></span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function wrap(text, width) { text.each(function () { var text = d3.select(this), words = text.text().split(/\s+/).reverse(), word, line = [], lineNumber = 0, lineHeight = 1.1, x = text.attr("x"), y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em"); while (word = words.pop()) { line.push(word); tspan.text(line.join(" ")); if (tspan.node().getComputedTextLength() &gt; width) { line.pop(); tspan.text(line.join(" ")); line = [word]; tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word); } } }); }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function saveAsPng(){ const svgElement = document.querySelector("#visualization svg"); if(svgElement){ saveSvgAsPng(svgElement, "assessment-calendar.png", {backgroundColor: 'white', scale: 2}); } else { alert("No chart to save!"); } }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>function saveAsPdf(){ const svgElement = document.querySelector("#visualization svg"); if(!svgElement) { alert("No chart to save!"); return; } const { width, height } = svgElement.getBBox(); const pdf = new jsPDF(width &gt; height ? 'l' : 'p', 'pt', [width, height]); svgAsPngUri(svgElement, {scale: 2}, function(uri) { pdf.addImage(uri, 'PNG', 0, 0, width, height); pdf.save('assessment-calendar.pdf'); }); }</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+</body>
+</html>
