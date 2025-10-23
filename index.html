@@ -20,7 +20,7 @@
             font-weight: 500; cursor: pointer; transition: background-color 0.2s;
         }
         .export-btn:hover, .action-btn:hover { opacity: 0.9; }
-        #setup-modal, #details-modal {
+        #splash-modal, #setup-modal, #details-modal {
             background: rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s ease-in-out;
         }
@@ -38,27 +38,136 @@
         /* Details Modal Styles */
         #details-modal-content a { color: #60a5fa; text-decoration: underline; }
         #details-modal-content strong { color: #f59e0b; font-weight: 600; }
+
+        /* Tooltip Styles */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            margin-left: 4px;
+            color: #0072b8;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: #334155;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 60; /* Higher than modal */
+            bottom: 125%; /* Position above the icon */
+            left: 50%;
+            margin-left: -150px; /* Use half of the width to center */
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: 400;
+            font-size: 0.875rem; /* 14px */
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Splash Page Link Styles */
+        .splash-link {
+            color: #0072b8;
+            text-decoration: underline;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body class="text-slate-800">
 
-    <!-- Setup Modal -->
-    <div id="setup-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <!-- Splash Page Modal -->
+    <div id="splash-modal" class="fixed inset-0 z-40 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col modal-content">
             <div class="p-6 border-b">
-                <h2 class="text-2xl font-bold text-slate-700">Create Your Assessment Calendar</h2>
-                <p class="text-slate-500">Select grades, assessments, and holidays to build your custom visualization.</p>
+                <h2 class="text-2xl font-bold text-slate-700">Assessment Calendar Builder</h2>
+            </div>
+            <div class="p-8 overflow-y-auto flex-grow text-slate-600 leading-relaxed space-y-6">
+                <div>
+                    <h3 class="font-semibold text-lg text-slate-700 mb-2">A Vision for Balanced Assessment</h3>
+                    <p class="text-sm">
+                        “Kent ISD is committed to maintaining a balanced assessment system that supports both teaching and learning by integrating multiple measures of student understanding. This balance includes assessments for learning; those that guide instruction and provide ongoing feedback to students, and assessments of learning that verify mastery and inform reporting. The goal is to ensure that every assessment serves a clear instructional purpose, minimizes unnecessary testing, and reflects the diverse cultural and linguistic backgrounds of our students.
+                    </p>
+                    <p class="mt-2 text-sm">
+                        When the assessment calendar is overlaid on the district’s school calendar, it provides a visual representation of when assessments occur throughout the year in relation to instructional cycles, breaks, and key community events. This alignment helps educators identify potential periods of over-assessment, plan for meaningful assessment opportunities to maximize feedback and impact, and coordinate instructional pacing to optimize student learning and well-being. Ultimately, the calendar serves as both a planning and communication tool; helping teachers, administrators, students, and families understand how assessment supports growth, guides instruction, and contributes to a cohesive learning experience across the district.”
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg text-slate-700 mb-2">Moving Toward Balance</h3>
+                    <p class="text-sm">
+                        After building your calendar, it may become evident that the assessment landscape doesn't feel very "balanced." This is a common and valid realization. The first step to improving a system is visualizing it. If you'd like to learn more about creating a truly balanced system, we encourage you to explore resources like the Michigan Assessment Consortium's (MAC) <a href="https://www.michiganassessmentconsortium.org/abca-for-leas/" target="_blank" class="splash-link">ABCA for LEA program</a>.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg text-slate-700 mb-2">Considering Demographic Context</h3>
+                    <p class="text-sm">
+                        A calendar tells one story, but your student data tells another. Considering your district's demographic data can add critical context to your assessment schedule. For example, understanding college-going rates, religious observances, or the number of English Learners can help ensure your assessment windows are equitable and appropriate for all students.
+                    </p>
+                    <p class="text-sm mt-2">
+                        We encourage you to use <a href="https://mischooldata.org/" target="_blank" class="splash-link">MI School Data</a> to explore this context:
+                    </p>
+                    <ul class="list-disc list-inside text-sm mt-2 space-y-1">
+                        <li><a href="https://mischooldata.org/dashboard/" target="_blank" class="splash-link">District & School Dashboards:</a> View detailed enrollment breakdowns by race, gender, special education status, and more.</li>
+                        <li><a href="https://mischooldata.org/english-learner-dashboard/" target="_blank" class="splash-link">English Learner Data:</a> See the number of EL students and their home languages.</li>
+                        <li><a href="https://mischooldata.org/student-attendance/" target="_blank" class="splash-link">Attendance & Outcomes Data:</a> Contextualize academic outcomes with demographic and attendance data.</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-semibold text-lg text-slate-700 mb-2">About This Tool</h3>
+                    <p class="text-sm">
+                        This tool was developed by Mike Maksimchuk, EdD, Assessment Consultant for Kent ISD. If you have questions, feedback, or suggestions, please do not hesitate to reach out at <a href="mailto:mikemaksimchuk@kentisd.org" class="splash-link">mikemaksimchuk@kentisd.org</a> or 616-447-5667.
+                    </p>
+                </div>
+                 
+                <div class="text-xs text-slate-500 pt-4 border-t border-slate-200">
+                    <p class="font-semibold">Legal Disclaimer & License</p>
+                    <p class="mt-1">
+                        This work, developed by Kent ISD, is licensed under a <a href="http://creativecommons.org/licenses/by-nc/4.0/" target="_blank" class="splash-link">Creative Commons Attribution-NonCommercial 4.0 International License</a>. You are free to share and adapt this work for non-commercial purposes, provided you give appropriate credit to Kent ISD.
+                    </p>
+                    <p class="mt-1">
+                        This tool is provided "as is" without warranty of any kind. All data entered is processed locally in your browser and is not saved, stored, or transmitted to any server. Users are solely responsible for ensuring that any data entered, visualized, or shared complies with all applicable privacy laws, including the Family Educational Rights and Privacy Act (FERPA).
+                    </p>
+                </div>
+
+            </div>
+            <div class="p-6 bg-slate-50 border-t rounded-b-2xl">
+                <button id="splash-proceed-btn" class="action-btn bg-[#8cc63f] w-full text-lg py-3">Ready to Start Building</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Setup Modal -->
+    <div id="setup-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col modal-content">
+            <div class="p-6 border-b flex justify-between items-center">
+                <div> <!-- Title and Subtitle -->
+                    <h2 class="text-2xl font-bold text-slate-700">Create Your Assessment Calendar</h2>
+                    <p class="text-slate-500">Select grades, assessments, and holidays to build your custom visualization.</p>
+                </div>
+                <div> <!-- Upload Button -->
+                    <button id="upload-data-btn" class="action-btn bg-slate-500 whitespace-nowrap">Upload Config</button>
+                    <input type="file" id="upload-data-input" class="hidden" accept=".json">
+                </div>
             </div>
             <div class="p-6 overflow-y-auto flex-grow">
                 <!-- Step 1: View Range -->
                  <div class="mb-8">
-                    <h3 class="font-semibold text-lg mb-3 text-slate-600">1. Select View Range</h3>
-                    <div class="flex items-center gap-4">
-                        <input type="date" id="view-range-start" class="date-input" value="2025-08-01">
-                        <span class="text-slate-500">to</span>
-                        <input type="date" id="view-range-end" class="date-input" value="2026-06-30">
-                    </div>
-                </div>
+                     <h3 class="font-semibold text-lg mb-3 text-slate-600">1. Select View Range</h3>
+                     <div class="flex items-center gap-4">
+                         <input type="date" id="view-range-start" class="date-input" value="2025-08-01">
+                         <span class="text-slate-500">to</span>
+                         <input type="date" id="view-range-end" class="date-input" value="2026-06-30">
+                     </div>
+                 </div>
                 <!-- Step 2: Grades -->
                 <div class="mb-8">
                     <h3 class="font-semibold text-lg mb-3 text-slate-600">2. Select Grade Levels</h3>
@@ -73,9 +182,9 @@
                 <div class="mb-8">
                     <h3 class="font-semibold text-lg mb-3 text-slate-600">4. Add Local / Custom Assessments</h3>
                      <label class="flex items-center cursor-pointer mb-4">
-                        <input type="checkbox" id="include-local-assessments" class="h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]">
-                        <span class="ml-2">Include Local / Custom Assessments</span>
-                    </label>
+                         <input type="checkbox" id="include-local-assessments" class="h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]">
+                         <span class="ml-2">Include Local / Custom Assessments</span>
+                     </label>
                     <div id="local-assessments-container" class="hidden">
                         <div class="flex flex-col md:flex-row gap-3 items-center">
                             <input type="text" id="other-assessment-name" placeholder="E.g., Unit 1 Math Test" class="date-input w-full md:w-1/2">
@@ -96,6 +205,26 @@
                     <div id="holiday-filters-container" class="hidden">
                         <h4 class="font-medium mb-2 text-slate-500">Select Religions to Display:</h4>
                         <div id="holiday-filters" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                    </div>
+                </div>
+                <!-- Step 6: District Calendar -->
+                <div class="mt-8">
+                    <h3 class="font-semibold text-lg mb-3 text-slate-600">6. District Calendar Considerations</h3>
+                    <p class="text-sm text-slate-500 mb-4">
+                        As you build your calendar, remember to consider your district's main calendar. Think about the first and last days of school, marking periods, parent-teacher conferences, and major breaks (e.g., Winter Break, Spring Break) that may impact your assessment windows.
+                    </p>
+                    <label class="flex items-center cursor-pointer mb-4">
+                         <input type="checkbox" id="include-district-events" class="h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]">
+                         <span class="ml-2">Include District Calendar Events (e.g., Spring Break)</span>
+                     </label>
+                    <div id="district-events-container" class="hidden">
+                        <div class="flex flex-col md:flex-row gap-3 items-center">
+                            <input type="text" id="district-event-name" placeholder="E.g., Spring Break" class="date-input w-full md:w-1/2">
+                            <input type="date" id="district-event-start" class="date-input w-full md:w-1/4">
+                            <input type="date" id="district-event-end" class="date-input w-full md:w-1/4">
+                            <button id="add-district-event-btn" class="action-btn bg-[#0072b8] whitespace-nowrap px-4 py-2 text-sm w-full md:w-auto">Add</button>
+                        </div>
+                        <div id="district-events-list" class="mt-3 text-sm text-slate-600 space-y-1"></div>
                     </div>
                 </div>
             </div>
@@ -126,11 +255,14 @@
             </div>
             <div class="flex gap-3 mt-4 sm:mt-0">
                  <button id="reconfigure-btn" class="action-btn bg-slate-500">Re-configure</button>
+                <button id="save-data-btn" class="export-btn bg-green-600">Download Data</button>
                 <button id="save-png-btn" class="export-btn bg-[#0072b8]">Save as PNG</button>
                 <button id="save-pdf-btn" class="export-btn bg-[#8cc63f]">Save as PDF</button>
             </div>
         </header>
         <main>
+            <!-- NEW WARNING DIV -->
+            <div id="visualization-warnings"></div>
             <div id="visualization" class="gantt-chart-container shadow-lg"></div>
         </main>
         <footer class="text-center mt-8 pt-4 border-t text-sm text-slate-500">
@@ -143,62 +275,90 @@
 
         const categorizedAssessments = {
             "State Mandated": [
-                { id: 'mstep_ela_math', grade: '3-7', name: 'M-STEP (ELA, Math)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math', duration: 'Varies, approx. 1-2.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step' },
-                { id: 'mstep_sci_ss', grade: '5, 8, 11', name: 'M-STEP (Science, SS)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'Science, Social Studies', duration: 'Varies, approx. 1-1.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step' },
+                { id: 'mstep_ela_math', grade: '3-7', name: 'M-STEP (ELA, Math)', category: 'State Mandated', startDate: '2026-04-07', endDate: '2026-05-16', subject: 'ELA, Math', duration: 'Varies, approx. 1-2.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
+                { id: 'mstep_sci_ss', grade: '5, 8, 11', name: 'M-STEP (Science, SS)', category: 'State Mandated', startDate: '2026-04-07', endDate: '2026-05-16', subject: 'Science, Social Studies', duration: 'Varies, approx. 1-1.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
             ],
             "College Readiness & Career": [
-                { id: 'psat89_fall', grade: '8', name: 'PSAT 8/9 (Fall)', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9' },
-                { id: 'psat_nmsqt', grade: '10', name: 'PSAT/NMSQT', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-nmsqt' },
-                { id: 'sat_essay', grade: '11', name: 'SAT with Essay', category: 'College Readiness', startDate: '2026-04-14', endDate: '2026-04-16', subject: 'Reading, Writing, Math, Essay', duration: 'Approx. 3 hours 50 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/sat' },
-                { id: 'act_workkeys', grade: '11', name: 'ACT WorkKeys', category: 'Career Readiness', startDate: '2026-04-14', endDate: '2026-04-16', subject: 'Applied Math, Graphic Literacy, Workplace Docs', duration: 'Approx. 3 hours', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/workkeys' },
-                { id: 'win_workplace', grade: '11', name: 'WIN Workplace Assessment', category: 'Career Readiness', subject: 'Career Readiness Skills', duration: 'Varies', startDate: '', endDate: '' },
-                { id: 'psat89_spring', grade: '8', name: 'PSAT 8/9 (Spring)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9' },
-                { id: 'psat_spring', grade: '9-10', name: 'PSAT (Spring)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-10' },
+                { id: 'psat89_fall', grade: '8', name: 'PSAT 8/9 (Fall)', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9', definition: 'Preliminary SAT (PSAT) 8/9: A test from the College Board suite that establishes a baseline for college readiness and practice for the SAT.' },
+                { id: 'psat_nmsqt', grade: '10', name: 'PSAT/NMSQT', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-nmsqt', definition: 'Preliminary SAT/National Merit Scholarship Qualifying Test: A practice test for the SAT that also serves as the entry point for the National Merit Scholarship Program for 11th graders (though often offered to 10th graders).' },
+                { id: 'sat_essay', grade: '11', name: 'SAT with Essay', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math, Essay', duration: 'Approx. 3 hours 50 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/sat', definition: 'Scholastic Aptitude Test (SAT): A standardized test widely used for college admissions in the UnitedS. Michigan provides this test free to all 11th graders as part of the Michigan Merit Examination (MME).' },
+                { id: 'win_workplace', grade: '11', name: 'WIN Workplace Assessment', category: 'Career Readiness', subject: 'Career Readiness Skills', duration: 'Varies', startDate: '2026-04-06', endDate: '2026-05-01', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'WIN Workplace Skills Assessment: Measures foundational workplace skills (e.g., Applied Math, Reading for Information). This assessment replaced ACT WorkKeys as part of the MME for 11th graders.' },
+                { id: 'psat89_spring', grade: '8', name: 'PSAT 8/9 (Spring, Gr 8)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9', definition: 'Preliminary SAT (PSAT) 8/9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 8th graders to measure progress toward college readiness.' },
+                { id: 'psat9_spring', grade: '9', name: 'PSAT 8/9 (Spring, Gr 9)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 8/9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 9th graders to measure progress toward college readiness.' },
+                { id: 'psat10_spring', grade: '10', name: 'PSAT 10 (Spring)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 10: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 10th graders. It is identical in format to the PSAT/NMSQT.' },
+                { id: 'ap_exams', grade: '9-12', name: 'AP Exams', category: 'College Readiness', startDate: '2026-05-04', endDate: '2026-05-15', subject: 'Varies', duration: 'Varies by exam', resourceLink: 'https://apstudents.collegeboard.org/exam-calendar', definition: 'Advanced Placement (AP) Exams: Subject-specific exams from the College Board that allow high school students to earn college credit or advanced placement at many universities.' },
+                { id: 'act_sept', grade: '11-12', name: 'ACT (Sept 6, 2025)', category: 'College Readiness', startDate: '2025-09-06', endDate: '2025-09-06', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_oct', grade: '11-12', name: 'ACT (Oct 18, 2025)', category: 'College Readiness', startDate: '2025-10-18', endDate: '2025-10-18', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_dec', grade: '11-12', name: 'ACT (Dec 13, 2025)', category: 'College Readiness', startDate: '2025-12-13', endDate: '2025-12-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_feb', grade: '11-12', name: 'ACT (Feb 14, 2026)', category: 'College Readiness', startDate: '2026-02-14', endDate: '2026-02-14', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_apr', grade: '11-12', name: 'ACT (Apr 11, 2026)', category: 'College Readiness', startDate: '2026-04-11', endDate: '2026-04-11', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_jun', grade: '11-12', name: 'ACT (Jun 13, 2026)', category: 'College Readiness', startDate: '2026-06-13', endDate: '2026-06-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
             ],
             "Universal Screeners & Benchmarks": [
-                 { id: 'elm_fall', grade: 'K', name: 'Early Literacy & Math (Fall)', category: 'Benchmark', startDate: '2025-08-25', endDate: '2025-10-24', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment' },
-                { id: 'nwea_fall', grade: 'K-11', name: 'NWEA MAP Growth (Fall)', category: 'Benchmark', startDate: '2025-09-02', endDate: '2025-09-26', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },
-                { id: 'nwea_winter', grade: 'K-11', name: 'NWEA MAP Growth (Winter)', category: 'Benchmark', startDate: '2026-01-05', endDate: '2026-01-30', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },
-                { id: 'nwea_spring', grade: 'K-8', name: 'NWEA MAP Growth (Spring)', category: 'Benchmark', startDate: '2026-05-04', endDate: '2026-05-29', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/' },
-                { id: 'dibels', grade: 'K-3', name: 'DIBELS', category: 'Benchmark', subject: 'Early Literacy', duration: 'Approx. 5-10 mins', startDate: '', endDate: ''},
-                { id: 'fastbridge', grade: 'K-12', name: 'FastBridge', category: 'Benchmark', subject: 'Reading, Math, Behavior', duration: 'Varies by module', startDate: '', endDate: ''},
-                { id: 'iready', grade: 'K-8', name: 'i-Ready Diagnostic', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 45-60 mins per subject', startDate: '', endDate: ''},
-                { id: 'star', grade: 'K-12', name: 'STAR Reading/Math', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 20-30 mins', startDate: '', endDate: ''},
-                { id: 'aimsweb', grade: 'K-12', name: 'AIMSwebPlus', category: 'Benchmark', subject: 'Reading, Math', duration: 'Varies by measure', startDate: '', endDate: ''},
+                 { id: 'elm_fall', grade: 'K', name: 'Early Literacy & Math (Fall)', category: 'Benchmark', startDate: '2025-08-25', endDate: '2025-10-24', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment', definition: 'Early Literacy & Mathematics Benchmark (KEO): A required assessment for Kindergarten students in the fall, used to identify potential learning needs.' },
+                 { id: 'nwea_fall', grade: 'K-11', name: 'NWEA MAP Growth (Fall)', category: 'Benchmark', startDate: '2025-09-02', endDate: '2025-09-26', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'nwea_winter', grade: 'K-11', name: 'NWEA MAP Growth (Winter)', category: 'Benchmark', startDate: '2026-01-05', endDate: '2026-01-30', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'nwea_spring', grade: 'K-8', name: 'NWEA MAP Growth (Spring)', category: 'Benchmark', startDate: '2026-05-04', endDate: '2026-05-29', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'dibels', grade: 'K-3', name: 'DIBELS', category: 'Benchmark', subject: 'Early Literacy', duration: 'Approx. 5-10 mins', startDate: '', endDate: '', definition: 'Dynamic Indicators of Basic Early Literacy Skills (DIBELS): A series of short (1-minute) fluency measures used to monitor the development of early literacy and reading skills.'},
+                 { id: 'fastbridge', grade: 'K-12', name: 'FastBridge', category: 'Benchmark', subject: 'Reading, Math, Behavior', duration: 'Varies by module', startDate: '', endDate: '', definition: 'FastBridge: An assessment system for universal screening, progress monitoring, and diagnostics in reading, math, and behavior. One of four state-approved benchmark providers.'},
+                 { id: 'iready', grade: 'K-8', name: 'i-Ready Diagnostic', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 45-60 mins per subject', startDate: '', endDate: '', definition: 'i-Ready Diagnostic: An adaptive benchmark assessment for reading and math that provides a detailed profile of student strengths and weaknesses. One of four state-approved benchmark providers.'},
+                 { id: 'star', grade: 'K-12', name: 'STAR Reading/Math', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 20-30 mins', startDate: '', endDate: '', definition: 'STAR Assessments (Renaissance): Adaptive benchmark assessments for reading and math used for screening and progress monitoring.'},
+                 { id: 'aimsweb', grade: 'K-12', name: 'AIMSwebPlus', category: 'Benchmark', subject: 'Reading, Math', duration: 'Varies by measure', startDate: '', endDate: '', definition: 'AIMSwebPlus: A benchmark and progress monitoring system for reading and math, often using brief, fluency-based measures.'},
+                 { id: 'smarter_balanced', grade: 'K-12', name: 'Smarter Balanced Interim Assessments', category: 'Benchmark', subject: 'ELA, Math', duration: 'Varies', startDate: '', endDate: '', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/interim-assessments', definition: 'Smarter Balanced (SBAC) Interim Assessments: Optional, non-public assessments that provide teachers with actionable data on student progress toward M-STEP proficiency. One of four state-approved benchmark providers.'},
             ],
             "English Language Proficiency": [
-                 { id: 'wida_screener', grade: 'K-12', name: 'WIDA Screener', category: 'English Learner', startDate: '2025-08-25', endDate: '2026-05-22', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://wida.wisc.edu/assess/screener' },
-                { id: 'wida_access', grade: 'K-12', name: 'WIDA ACCESS', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida' },
+                 { id: 'wida_screener', grade: 'K-12', name: 'WIDA Screener', category: 'English Learner', startDate: '2025-08-25', endDate: '2026-05-22', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://wida.wisc.edu/assess/screener', definition: 'WIDA Screener: An assessment used to identify new students (K-12) who may be English Learners (ELs) and qualify for language support services.' },
+                { id: 'wida_access', grade: 'K-12', name: 'WIDA ACCESS', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida', definition: 'WIDA ACCESS for ELLs: A summative annual assessment that measures the English language proficiency of identified English Learners (ELs) in speaking, listening, reading, and writing.' },
             ],
             "Alternate Assessments": [
-                { id: 'mi_access', grade: '3-8, 11', name: 'MI-Access', category: 'Alternate Assessment', subject: 'ELA, Math, Science, SS', duration: 'Varies by student', startDate: '', endDate: '', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access'},
+                { id: 'mi_access', grade: '3-8, 11', name: 'MI-Access', category: 'Alternate Assessment', subject: 'ELA, Math, Science, SS', duration: 'Varies by student', startDate: '2026-04-07', endDate: '2026-05-16', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access', definition: 'Michigan\'s Alternate Assessment Program (MI-Access): A summative assessment for students with significant cognitive disabilities whose IEP teams have determined that M-STEP is not appropriate.'},
             ]
         };
         const allAssessments = Object.values(categorizedAssessments).flat();
 
         const holidayData = [
-            { name: 'Rosh Hashanah', religions: ['Jewish'], startDate: '2025-09-22', endDate: '2025-09-24', resourceLink: 'https://en.wikipedia.org/wiki/Rosh_Hashanah' },
-            { name: 'Yom Kippur', religions: ['Jewish'], startDate: '2025-10-01', endDate: '2025-10-02', resourceLink: 'https://en.wikipedia.org/wiki/Yom_Kippur' },
-            { name: 'Diwali', religions: ['Hindu', 'Sikh', 'Jain'], startDate: '2025-10-21', endDate: '2025-10-21', resourceLink: 'https://en.wikipedia.org/wiki/Diwali' },
             { name: 'Christmas', religions: ['Christian'], startDate: '2025-12-25', endDate: '2025-12-25', resourceLink: 'https://en.wikipedia.org/wiki/Christmas' },
-            { name: 'Hanukkah', religions: ['Jewish'], startDate: '2025-12-14', endDate: '2025-12-22', resourceLink: 'https://en.wikipedia.org/wiki/Hanukkah' },
-            { name: 'Orthodox Christmas', religions: ['Orthodox Christian'], startDate: '2026-01-07', endDate: '2026-01-07', resourceLink: 'https://en.wikipedia.org/wiki/Christmas#Date_and_cycle' },
-            { name: 'Lunar New Year', religions: ['East Asian'], startDate: '2026-02-17', endDate: '2026-02-17', resourceLink: 'https://en.wikipedia.org/wiki/Lunar_New_Year' },
-            { name: 'Ramadan Begins', religions: ['Muslim'], startDate: '2026-02-18', endDate: '2026-02-18', resourceLink: 'https://en.wikipedia.org/wiki/Ramadan' },
+            { name: 'Diwali', religions: ['Hindu', 'Sikh', 'Jain'], startDate: '2025-10-21', endDate: '2025-10-21', resourceLink: 'https://en.wikipedia.org/wiki/Diwali' },
+            { name: 'Easter', religions: ['Christian'], startDate: '2026-04-05', endDate: '2026-04-05', resourceLink: 'https://en.wikipedia.org/wiki/Easter' },
             { name: 'Eid al-Fitr', religions: ['Muslim'], startDate: '2026-03-20', endDate: '2026-03-20', resourceLink: 'https://en.wikipedia.org/wiki/Eid_al-Fitr' },
             { name: 'Good Friday', religions: ['Christian'], startDate: '2026-04-03', endDate: '2026-04-03', resourceLink: 'https://en.wikipedia.org/wiki/Good_Friday' },
+            { name: 'Hanukkah', religions: ['Jewish'], startDate: '2025-12-14', endDate: '2025-12-22', resourceLink: 'https://en.wikipedia.org/wiki/Hanukkah' },
+            { name: 'Lunar New Year', religions: ['East Asian'], startDate: '2026-02-17', endDate: '2026-02-17', resourceLink: 'https://en.wikipedia.org/wiki/Lunar_New_Year' },
+            { name: 'Naw-Rúz', religions: ['Baháʼí'], startDate: '2026-03-20', endDate: '2026-03-20', resourceLink: 'https://en.wikipedia.org/wiki/Naw-R%C3%BAz' },
+            { name: 'Orthodox Christmas', religions: ['Orthodox Christian', 'Christian'], startDate: '2026-01-07', endDate: '2026-01-07', resourceLink: 'https://en.wikipedia.org/wiki/Christmas#Date_and_cycle' },
+            { name: 'Orthodox Easter', religions: ['Orthodox Christian', 'Christian'], startDate: '2026-04-12', endDate: '2026-04-12', resourceLink: 'https://en.wikipedia.org/wiki/Easter#Eastern_Christianity' },
             { name: 'Passover', religions: ['Jewish'], startDate: '2026-04-01', endDate: '2026-04-09', resourceLink: 'https://en.wikipedia.org/wiki/Passover' },
-            { name: 'Easter', religions: ['Christian'], startDate: '2026-04-05', endDate: '2026-04-05', resourceLink: 'https://en.wikipedia.org/wiki/Easter' },
-            { name: 'Orthodox Easter', religions: ['Orthodox Christian'], startDate: '2026-04-12', endDate: '2026-04-12', resourceLink: 'https://en.wikipedia.org/wiki/Easter#Eastern_Christianity' },
+            { name: 'Ramadan Begins', religions: ['Muslim'], startDate: '2026-02-18', endDate: '2026-02-18', resourceLink: 'https://en.wikipedia.org/wiki/Ramadan' },
+            { name: 'Rosh Hashanah', religions: ['Jewish'], startDate: '2025-09-22', endDate: '2025-09-24', resourceLink: 'https://en.wikipedia.org/wiki/Rosh_Hashanah' },
             { name: 'Vaisakhi', religions: ['Sikh', 'Hindu'], startDate: '2026-04-13', endDate: '2026-04-13', resourceLink: 'https://en.wikipedia.org/wiki/Vaisakhi' },
+            { name: 'Vesak', religions: ['Buddhist'], startDate: '2026-05-01', endDate: '2026-05-01', resourceLink: 'https://en.wikipedia.org/wiki/Vesak' },
+            { name: 'Yom Kippur', religions: ['Jewish'], startDate: '2025-10-01', endDate: '2025-10-02', resourceLink: 'https://en.wikipedia.org/wiki/Yom_Kippur' },
         ];
         
+        // Define category-level definitions
+        const categoryDefinitions = {
+            "State Mandated": "Assessments required by the state of Michigan, such as M-STEP and components of the Michigan Merit Examination (MME).",
+            "College Readiness & Career": "Assessments designed to measure a student's preparedness for post-secondary education or the workforce, such as the SAT, PSAT, and AP Exams.",
+            "Universal Screeners & Benchmarks": "Assessments (often given 3x/year) used to check all students' progress, identify those at risk, and inform instruction. Michigan requires districts to use one of four approved providers.",
+            "English Language Proficiency": "Assessments specifically for students identified as English Learners (ELs) to measure their progress in acquiring English (WIDA ACCESS) or to identify them for services (WIDA Screener).",
+            "Alternate Assessments": "Assessments designed for students with the most significant cognitive disabilities for whom general assessments are not appropriate, as determined by an IEP team."
+        };
+
         let otherAssessments = [];
+        let districtEvents = []; // Array for district events
 
         document.addEventListener('DOMContentLoaded', () => {
             populateModalFilters();
             setupEventListeners();
         });
+
+        function createTooltip(text) {
+            if (!text) return '';
+            return `<span class="tooltip-container">
+                        <span class="font-normal">&#9432;</span>
+                        <span class="tooltip-text">${text}</span>
+                    </span>`;
+        }
 
         function populateModalFilters() {
             const gradeFilters = document.getElementById('grade-filters');
@@ -212,8 +372,10 @@
             });
 
             for (const category in categorizedAssessments) {
-                let categoryHtml = `<div class="mb-3"><h4 class="font-medium text-md text-slate-500 mb-2">${category}</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">`;
+                const categoryTooltip = createTooltip(categoryDefinitions[category]);
+                let categoryHtml = `<div class="mb-3"><h4 class="font-medium text-md text-slate-500 mb-2">${category} ${categoryTooltip}</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">`;
                 categorizedAssessments[category].forEach(a => {
+                    const itemTooltip = createTooltip(a.definition);
                     const dateInputs = `
                         <div class="assessment-date-inputs hidden pl-6 mt-1 flex items-center gap-2">
                             <input type="date" id="start-${a.id}" class="date-input text-sm" value="${a.startDate || ''}">
@@ -222,9 +384,9 @@
                         </div>`;
                     categoryHtml += `
                         <div>
-                            <label class="flex items-center cursor-pointer text-slate-700">
-                                <input type="checkbox" class="assessment-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${a.id}">
-                                <span class="ml-2">${a.name} (Grades: ${a.grade})</span>
+                            <label class="flex items-start cursor-pointer text-slate-700">
+                                <input type="checkbox" class="assessment-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8] mt-0.5" value="${a.id}">
+                                <span class="ml-2">${a.name} (Grades: ${a.grade}) ${itemTooltip}</span>
                             </label>
                             ${dateInputs}
                         </div>`;
@@ -233,7 +395,7 @@
                 assessmentFilters.innerHTML += categoryHtml;
             }
             
-            const holidayReligions = [...new Set(holidayData.flatMap(d => d.religions))];
+            const holidayReligions = [...new Set(holidayData.flatMap(d => d.religions))].sort(); // <-- Sorted alphabetically
             holidayReligions.forEach(r => {
                 holidayFilters.innerHTML += `<label class="flex items-center cursor-pointer text-slate-700"><input type="checkbox" class="holiday-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${r}">
                 <span class="ml-2">${r}</span></label>`;
@@ -241,6 +403,12 @@
         }
         
         function setupEventListeners(){
+            // Splash Page Proceed Button
+            document.getElementById('splash-proceed-btn').addEventListener('click', () => {
+                document.getElementById('splash-modal').classList.add('hidden');
+                document.getElementById('setup-modal').classList.remove('hidden');
+            });
+
             // Modal event listeners
             document.getElementById('include-local-assessments').addEventListener('change', (e) => {
                 document.getElementById('local-assessments-container').classList.toggle('hidden', !e.target.checked);
@@ -248,6 +416,10 @@
 
             document.getElementById('include-holidays').addEventListener('change', (e) => {
                 document.getElementById('holiday-filters-container').classList.toggle('hidden', !e.target.checked);
+            });
+
+            document.getElementById('include-district-events').addEventListener('change', (e) => {
+                document.getElementById('district-events-container').classList.toggle('hidden', !e.target.checked);
             });
 
             document.getElementById('assessment-filters').addEventListener('change', (e) => {
@@ -277,7 +449,50 @@
                     endInput.value = '';
                     renderOtherAssessmentsList();
                 } else {
-                    alert('Please provide a name, start date, and end date for the custom assessment.');
+                    // Replaced alert with a simple console log for the iframe environment
+                    console.warn('Please provide a name, start date, and end date for the custom assessment.');
+                }
+            });
+
+            document.getElementById('add-district-event-btn').addEventListener('click', () => {
+                const nameInput = document.getElementById('district-event-name');
+                const startInput = document.getElementById('district-event-start');
+                const endInput = document.getElementById('district-event-end');
+                if (nameInput.value && startInput.value && endInput.value) {
+                    districtEvents.push({
+                        name: nameInput.value,
+                        startDate: startInput.value,
+                        endDate: endInput.value,
+                        type: 'district-event' // Use a specific type
+                    });
+                    nameInput.value = '';
+                    startInput.value = '';
+                    endInput.value = '';
+                    renderDistrictEventsList();
+                } else {
+                    console.warn('Please provide a name, start date, and end date for the district event.');
+                }
+            });
+
+            // Add event listener for deleting other assessments (using event delegation)
+            document.getElementById('other-assessments-list').addEventListener('click', (e) => {
+                if (e.target && e.target.classList.contains('delete-other-assessment')) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    if (!isNaN(index)) {
+                        otherAssessments.splice(index, 1); // Remove the item from the array
+                        renderOtherAssessmentsList(); // Re-render the list
+                    }
+                }
+            });
+
+            // Add event listener for deleting district events (using event delegation)
+            document.getElementById('district-events-list').addEventListener('click', (e) => {
+                if (e.target && e.target.classList.contains('delete-district-event')) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    if (!isNaN(index)) {
+                        districtEvents.splice(index, 1); // Remove the item from the array
+                        renderDistrictEventsList(); // Re-render the list
+                    }
                 }
             });
 
@@ -298,16 +513,40 @@
                 document.getElementById('details-modal').classList.add('hidden');
             });
             
+            // Save/Load buttons
+            document.getElementById('save-data-btn').addEventListener('click', downloadDataFile);
+            document.getElementById('upload-data-btn').addEventListener('click', () => {
+                document.getElementById('upload-data-input').click();
+            });
+            document.getElementById('upload-data-input').addEventListener('change', handleDataUpload);
+
             document.getElementById('save-png-btn').addEventListener('click', () => saveAsPng());
             document.getElementById('save-pdf-btn').addEventListener('click', () => saveAsPdf());
         }
 
         function renderOtherAssessmentsList() {
             const listEl = document.getElementById('other-assessments-list');
-            listEl.innerHTML = otherAssessments.map(a => `<div class="bg-slate-100 p-2 rounded">✓ ${a.name} (${a.startDate} to ${a.endDate})</div>`).join('');
+            listEl.innerHTML = otherAssessments.map((a, index) => 
+                `<div class="bg-slate-100 p-2 rounded flex justify-between items-center">
+                    <span>✓ ${a.name} (${a.startDate} to ${a.endDate})</span>
+                    <button class="delete-other-assessment text-red-500 hover:text-red-700 font-bold px-2" data-index="${index}" title="Remove assessment">&times;</button>
+                </div>`
+            ).join('');
+        }
+
+        function renderDistrictEventsList() {
+            const listEl = document.getElementById('district-events-list');
+            listEl.innerHTML = districtEvents.map((a, index) => 
+                `<div class="bg-slate-100 p-2 rounded flex justify-between items-center">
+                    <span>✓ ${a.name} (${a.startDate} to ${a.endDate})</span>
+                    <button class="delete-district-event text-red-500 hover:text-red-700 font-bold px-2" data-index="${index}" title="Remove event">&times;</button>
+                </div>`
+            ).join('');
         }
 
         function parseGrade(gradeStr) {
+            // This function is no longer used by updateVisualization, 
+            // but is kept for potential future use or data parsing.
             if (!gradeStr) return [];
             if (gradeStr.includes('-')) {
                 const parts = gradeStr.split('-');
@@ -326,25 +565,33 @@
         }
 
         function updateVisualization() {
-            const selectedGrades = Array.from(document.querySelectorAll('.grade-filter:checked')).map(el => el.value);
             const selectedAssessmentIds = Array.from(document.querySelectorAll('.assessment-filter:checked')).map(el => el.value);
             
+            let itemsWithMissingDates = [];
+
             let finalData = allAssessments.filter(a => selectedAssessmentIds.includes(a.id)).map(a => {
                 const startDate = document.getElementById(`start-${a.id}`).value;
                 const endDate = document.getElementById(`end-${a.id}`).value;
                 if (startDate && endDate) {
-                    return {...a, startDate, endDate}; // Always use the values from the input boxes
+                    return {...a, startDate, endDate, type: 'assessment'}; // Add type
                 }
+                itemsWithMissingDates.push(a.name); // Add to warning list
                 return null;
-            }).filter(Boolean) // remove any assessments where the user didn't provide a date
-            .filter(d => { // filter by grade
-                const itemGrades = parseGrade(d.grade);
-                return selectedGrades.some(sg => itemGrades.includes(sg));
-            }).map(d => ({...d, type: 'assessment'}));
+            }).filter(Boolean); // remove any assessments where the user didn't provide dates
+            
+            // --- GRADE FILTER REMOVED ---
+            // The logic now shows all selected assessments regardless of grade.
             
             const includeLocal = document.getElementById('include-local-assessments').checked;
             if (includeLocal) {
-                 finalData = [...finalData, ...otherAssessments];
+                 // Check dates for local assessments
+                 otherAssessments.forEach(a => {
+                    if(a.startDate && a.endDate) {
+                        finalData.push(a); // 'a' already has type: 'assessment'
+                    } else {
+                        itemsWithMissingDates.push(a.name);
+                    }
+                 });
             }
 
             const includeHolidays = document.getElementById('include-holidays').checked;
@@ -356,6 +603,30 @@
                 finalData = [...finalData, ...filteredHolidays];
             }
             
+            // Add district events
+            const includeDistrictEvents = document.getElementById('include-district-events').checked;
+            if (includeDistrictEvents) {
+                // We map them here to ensure they have the correct 'type' property
+                districtEvents.forEach(e => {
+                    if(e.startDate && e.endDate) {
+                        finalData.push(e); // 'e' already has type: 'district-event'
+                    } else {
+                        itemsWithMissingDates.push(e.name);
+                    }
+                });
+            }
+
+            // --- Update Warning Area ---
+            const warningEl = document.getElementById('visualization-warnings');
+            if (itemsWithMissingDates.length > 0) {
+                warningEl.innerHTML = `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-md shadow-sm">
+                    <p class="font-bold">Items Not Displayed</p>
+                    <p>The following items were checked but are missing a start or end date and have been hidden: ${itemsWithMissingDates.join(', ')}</p>
+                </div>`;
+            } else {
+                warningEl.innerHTML = ''; // Clear warnings
+            }
+
             finalData.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
             const viewStart = document.getElementById('view-range-start').value;
             const viewEnd = document.getElementById('view-range-end').value;
@@ -374,8 +645,8 @@
             const margin = { top: 50, right: 30, bottom: 40, left: 220 };
             const containerWidth = document.getElementById('visualization').clientWidth;
             const width = Math.max(containerWidth, 900) - margin.left - margin.right;
-            const itemHeight = 30;
-            const itemMargin = 10;
+            const itemHeight = 20; // Changed from 30
+            const itemMargin = 8; // Changed from 10
             const height = data.length * (itemHeight + itemMargin);
             
             const svg = container.append("svg")
@@ -384,6 +655,13 @@
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
             
+            // Add a white background to the SVG for PNG export
+            svg.append("rect")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("transform", `translate(${-margin.left},${-margin.top})`)
+                .attr("fill", "#ffffff");
+
             const timeDomain = [new Date(viewStart), new Date(viewEnd)];
             const xScale = d3.scaleTime().domain(timeDomain).range([0, width]);
 
@@ -403,7 +681,11 @@
                 .attr("x", d => xScale(new Date(d.startDate)))
                 .attr("width", d => Math.max(2, xScale(new Date(d.endDate)) - xScale(new Date(d.startDate))))
                 .attr("height", itemHeight).attr("rx", 5).attr("ry", 5)
-                .style("fill", d => d.type === 'holiday' ? '#64748b' : colorScale(d.category))
+                .style("fill", d => {
+                    if (d.type === 'holiday') return '#64748b'; // Slate gray for holidays
+                    if (d.type === 'district-event') return '#a8a29e'; // Stone gray for district events
+                    return colorScale(d.category); // Colors for assessments
+                })
                 .style("opacity", 0.9).style("cursor", "pointer")
                 .on("click", function(event, d) {
                     let modalContent = `<h3 class="text-xl font-bold mb-4">${d.name}</h3>`;
@@ -427,9 +709,217 @@
         }
         
         function wrap(text, width) { text.each(function () { var text = d3.select(this), words = text.text().split(/\s+/).reverse(), word, line = [], lineNumber = 0, lineHeight = 1.1, x = text.attr("x"), y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em"); while (word = words.pop()) { line.push(word); tspan.text(line.join(" ")); if (tspan.node().getComputedTextLength() > width) { line.pop(); tspan.text(line.join(" ")); line = [word]; tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word); } } }); }
-        function saveAsPng(){ const svgElement = document.querySelector("#visualization svg"); if(svgElement){ saveSvgAsPng(svgElement, "assessment-calendar.png", {backgroundColor: 'white', scale: 2}); } else { alert("No chart to save!"); } }
-        function saveAsPdf(){ const svgElement = document.querySelector("#visualization svg"); if(!svgElement) { alert("No chart to save!"); return; } const { width, height } = svgElement.getBBox(); const pdf = new jsPDF(width > height ? 'l' : 'p', 'pt', [width, height]); svgAsPngUri(svgElement, {scale: 2}, function(uri) { pdf.addImage(uri, 'PNG', 0, 0, width, height); pdf.save('assessment-calendar.pdf'); }); }
+        
+        // --- Start: New Save/Load Functions ---
 
+        /**
+         * Gathers the current state of all user inputs from the modal.
+         * @returns {object} A configuration object.
+         */
+        function getCurrentConfig() {
+            // 1. Get View Range
+            const viewRangeStart = document.getElementById('view-range-start').value;
+            const viewRangeEnd = document.getElementById('view-range-end').value;
+            
+            // 2. Get Selected Grades
+            const selectedGrades = Array.from(document.querySelectorAll('.grade-filter:checked')).map(el => el.value);
+            
+            // 3. Get Selected Assessments and ALL assessment dates
+            const selectedAssessmentIds = Array.from(document.querySelectorAll('.assessment-filter:checked')).map(el => el.value);
+            const assessmentDates = {};
+            allAssessments.forEach(a => {
+                const startInput = document.getElementById(`start-${a.id}`);
+                const endInput = document.getElementById(`end-${a.id}`);
+                if (startInput && endInput) { // Check if inputs exist
+                    assessmentDates[a.id] = {
+                        startDate: startInput.value,
+                        endDate: endInput.value
+                    };
+                }
+            });
+
+            // 4. Get Local Assessments
+            const includeLocalAssessments = document.getElementById('include-local-assessments').checked;
+            // The `otherAssessments` array is already in memory
+
+            // 5. Get Holiday Settings
+            const includeHolidays = document.getElementById('include-holidays').checked;
+            const selectedReligions = Array.from(document.querySelectorAll('.holiday-filter:checked')).map(el => el.value);
+
+            // 6. Get District Events
+            const includeDistrictEvents = document.getElementById('include-district-events').checked;
+
+            return {
+                viewRangeStart,
+                viewRangeEnd,
+                selectedGrades,
+                selectedAssessmentIds,
+                assessmentDates,
+                includeLocalAssessments,
+                localAssessments: otherAssessments, // Save the array directly
+                includeHolidays,
+                selectedReligions,
+                includeDistrictEvents,
+                districtEvents: districtEvents // Save the array
+            };
+        }
+
+        /**
+         * Triggers a browser download of the current config as a JSON file.
+         */
+        function downloadDataFile() {
+            const config = getCurrentConfig();
+            const dataStr = JSON.stringify(config, null, 2); // Pretty-print JSON
+            const dataBlob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = "assessment_config.json";
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
+            URL.revokeObjectURL(url);
+        }
+
+        /**
+         * Handles the file input change event for loading a config file.
+         * @param {Event} event The file input change event.
+         */
+        function handleDataUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const loadedState = JSON.parse(e.target.result);
+                    applyLoadedState(loadedState);
+                } catch (err) {
+                    console.error("Failed to parse config file:", err);
+                    console.warn("Could not load file. Please make sure it is a valid .json config file.");
+                }
+            };
+            reader.readAsText(file);
+            // Clear the input value to allow re-uploading the same file
+            event.target.value = null;
+        }
+
+        /**
+         * Applies a loaded configuration state to the setup modal.
+         * @param {object} state The loaded configuration object.
+         */
+        function applyLoadedState(state) {
+            if (!state) return;
+
+            // 1. Set View Range
+            if (state.viewRangeStart) document.getElementById('view-range-start').value = state.viewRangeStart;
+            if (state.viewRangeEnd) document.getElementById('view-range-end').value = state.viewRangeEnd;
+
+            // 2. Set Selected Grades
+            if (state.selectedGrades) {
+                document.querySelectorAll('.grade-filter').forEach(cb => {
+                    cb.checked = state.selectedGrades.includes(cb.value);
+                });
+            }
+
+            // 3. Set Assessments and their dates
+            if (state.assessmentDates) {
+                allAssessments.forEach(a => {
+                    const stateForId = state.assessmentDates[a.id];
+                    if (stateForId) {
+                        document.getElementById(`start-${a.id}`).value = stateForId.startDate;
+                        document.getElementById(`end-${a.id}`).value = stateForId.endDate;
+                    }
+                });
+            }
+            if (state.selectedAssessmentIds) {
+                document.querySelectorAll('.assessment-filter').forEach(cb => {
+                    cb.checked = state.selectedAssessmentIds.includes(cb.value);
+                    // Also trigger the show/hide for the date inputs
+                    const dateInputs = cb.closest('div').querySelector('.assessment-date-inputs');
+                    if (dateInputs) {
+                        dateInputs.classList.toggle('hidden', !cb.checked);
+                    }
+                });
+            }
+
+            // 4. Set Local Assessments
+            if (state.localAssessments) {
+                otherAssessments = state.localAssessments;
+                document.getElementById('include-local-assessments').checked = state.includeLocalAssessments;
+                document.getElementById('local-assessments-container').classList.toggle('hidden', !state.includeLocalAssessments);
+                renderOtherAssessmentsList();
+            }
+
+            // 5. Set Holiday Settings
+            if (state.selectedReligions) {
+                document.getElementById('include-holidays').checked = state.includeHolidays;
+                document.getElementById('holiday-filters-container').classList.toggle('hidden', !state.includeHolidays);
+                document.querySelectorAll('.holiday-filter').forEach(cb => {
+                    cb.checked = state.selectedReligions.includes(cb.value);
+                });
+            }
+
+            // 6. Set District Events
+            if (state.districtEvents) {
+                districtEvents = state.districtEvents;
+                document.getElementById('include-district-events').checked = state.includeDistrictEvents;
+                document.getElementById('district-events-container').classList.toggle('hidden', !state.includeDistrictEvents);
+                renderDistrictEventsList();
+            }
+            
+            console.log("Successfully loaded configuration.");
+        }
+        
+        // --- End of New Save/Load Functions ---
+
+        function saveAsPng(){ 
+            const svgElement = document.querySelector("#visualization svg"); 
+            if(svgElement){ 
+                saveSvgAsPng(svgElement, "assessment-calendar.png", { 
+                    backgroundColor: "#ffffff", 
+                    scale: 2 
+                }); 
+            } else { 
+                console.warn("Could not find visualization to save."); 
+            } 
+        }
+        
+        async function saveAsPdf() { 
+            const svgElement = document.querySelector("#visualization svg"); 
+            if (!svgElement) { 
+                console.warn("Could not find visualization to save."); 
+                return; 
+            } 
+            try { 
+                // Get the full size of the SVG content, not just the viewport
+                const svgBounds = svgElement.getBBox();
+                const fullWidth = svgBounds.x + svgBounds.width + 50; // Add some padding
+                const fullHeight = svgBounds.y + svgBounds.height + 50; // Add some padding
+
+                // Use the full size for the data URL generation
+                const dataUrl = await saveSvgAsPng.svgAsDataUri(svgElement, { 
+                    backgroundColor: "#ffffff", 
+                    scale: 2, // Increase scale for better PDF quality
+                    width: fullWidth,
+                    height: fullHeight
+                }); 
+                
+                // Determine orientation based on the full size
+                const orientation = fullWidth > fullHeight ? 'l' : 'p'; 
+                const doc = new jsPDF(orientation, 'px', [fullWidth, fullHeight]); 
+                
+                const imgWidth = doc.internal.pageSize.getWidth(); 
+                const imgHeight = doc.internal.pageSize.getHeight(); 
+                
+                doc.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight); 
+                doc.save("assessment-calendar.pdf"); 
+            } catch (e) { 
+                console.error("Error saving PDF:", e); 
+                console.warn("An error occurred while saving the PDF."); 
+            } 
+        }
     </script>
 </body>
 </html>
