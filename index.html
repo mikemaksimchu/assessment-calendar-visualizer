@@ -6,8 +6,10 @@
     <title>District-Wide Assessment Calendar & Visualizer</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/save-svg-as-png/1.4.17/saveSvgAsPng.min.js"></script>
+    <!-- ics.js for iCal generation -->
+    <script src="https://cdn.jsdelivr.net/npm/ics@3.7.2/dist/ics.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -15,12 +17,34 @@
             background-color: #f8fafc;
         }
         .gantt-chart-container { width: 100%; overflow-x: auto; background-color: #ffffff; padding: 1rem 0; border-radius: 1rem; }
-        .export-btn, .action-btn {
+        
+        .action-btn, .export-btn, .view-select {
             padding: 8px 16px; border: none; border-radius: 8px; color: white;
             font-weight: 500; cursor: pointer; transition: background-color 0.2s;
+            white-space: nowrap;
         }
-        .export-btn:hover, .action-btn:hover { opacity: 0.9; }
-        #splash-modal, #setup-modal, #details-modal {
+        .action-btn:hover, .export-btn:hover, .view-select:hover { opacity: 0.9; }
+        .view-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: #0072b8; /* Kent ISD Blue */
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.25em 1.25em;
+            padding-right: 2.5rem;
+        }
+
+        /* color definitions for header buttons */
+        #reconfigure-btn {
+            background-color: #417E38; /* Kent ISD Dark Green ("Palm Green") */
+        }
+        #export-btn {
+            background-color: #8CC63F; /* Kent ISD Light Green ("Android Green") */
+        }
+
+        #splash-modal, #setup-modal, #details-modal, #export-modal {
             background: rgba(0, 0, 0, 0.5);
             transition: opacity 0.3s ease-in-out;
         }
@@ -77,6 +101,306 @@
             text-decoration: underline;
             font-weight: 500;
         }
+
+        /* Export Modal Styles */
+        .export-option-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* 12px */
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0; /* slate-200 */
+            background-color: #ffffff; /* white */
+            text-align: left;
+            font-weight: 500;
+            color: #334155; /* slate-700 */
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+        .export-option-btn:hover {
+            background-color: #f8fafc; /* slate-50 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        .export-option-btn svg {
+            color: #0072b8; /* Kent ISD Blue */
+        }
+        .export-option-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+         .export-option-btn:disabled:hover {
+            background-color: #f1f5f9; /* slate-100 */
+            box-shadow: none;
+        }
+
+        /* Calendar View Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            border-left: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+        }
+        .calendar-day-header {
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 4px;
+            background-color: #f1f5f9;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            color: #475569;
+        }
+        .calendar-day {
+            min-height: 120px;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 4px;
+            font-size: 0.75rem;
+            background-color: #fff;
+        }
+        .calendar-day.other-month {
+            background-color: #f8fafc;
+            color: #94a3b8;
+        }
+        .calendar-day-num {
+            font-weight: 500;
+        }
+        .calendar-event {
+            font-size: 0.7rem;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-top: 2px;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            cursor: pointer;
+        }
+
+        /* Year-at-a-Glance */
+        .year-view-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .year-month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border-left: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+        }
+        .year-day-header {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-align: center;
+            padding: 2px;
+            background-color: #f1f5f9;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            color: #475569;
+        }
+        .year-day-cell {
+            font-size: 0.7rem;
+            height: 28px;
+            width: 100%;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 2px;
+            position: relative;
+        }
+        .year-day-cell.other-month {
+            background-color: #f8fafc;
+            color: #cbd5e1;
+        }
+        .year-day-cell .day-num {
+            color: #64748b;
+        }
+        .year-event-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            bottom: 3px;
+            left: 3px;
+        }
+        .year-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+        .year-legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background-color: #ffffff;
+                font-family: 'Inter', sans-serif;
+            }
+            #splash-modal, #setup-modal, #details-modal, #export-modal, #main-content header, #main-content footer {
+                display: none !important;
+            }
+            #main-content {
+                display: block !important;
+                padding: 0;
+                margin: 0;
+            }
+            main {
+                padding: 0;
+                margin: 0;
+            }
+            #visualization {
+                overflow: visible;
+                box-shadow: none;
+                padding: 0;
+            }
+            .gantt-chart-container, #year-view, #month-view {
+                display: none; /* Hide all views by default */
+            }
+            #print-container {
+                display: block !important; /* Show only the print container */
+            }
+
+            /* Monthly Print */
+            .month-view-print-page {
+                page-break-after: always;
+                padding-top: 1in;
+                padding-left: 0.5in;
+                padding-right: 0.5in;
+                padding-bottom: 0.5in;
+            }
+            .month-view-print-page:last-child {
+                page-break-after: avoid;
+            }
+            .month-view-print-page h2 {
+                font-size: 24pt;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 16px;
+            }
+            .calendar-grid {
+                border: 2px solid #333;
+            }
+            .calendar-day-header {
+                font-size: 10pt;
+                font-weight: bold;
+                background-color: #eee;
+                color: #000;
+                border: 1px solid #666;
+            }
+            .calendar-day {
+                min-height: 100px;
+                border: 1px solid #666;
+                padding: 4px;
+                font-size: 9pt;
+                vertical-align: top;
+            }
+            .calendar-day.other-month {
+                background-color: #f9f9f9;
+                color: #aaa;
+            }
+            .calendar-event {
+                font-size: 8pt;
+                padding: 2px 4px;
+                border-radius: 4px;
+                margin-top: 2px;
+                color: white;
+                border: 1px solid #333;
+                -webkit-print-color-adjust: exact; /* Force color printing */
+                color-adjust: exact;
+            }
+
+            /* Year-at-a-Glance Print */
+            #year-view-print-container {
+                width: 100%;
+                page-break-inside: avoid;
+            }
+             .year-view-print-header {
+                text-align: center;
+                margin-bottom: 24px;
+            }
+            .year-view-print-header h1 {
+                font-size: 28pt;
+                font-weight: bold;
+            }
+            .year-view-print-header h2 {
+                font-size: 16pt;
+                color: #555;
+            }
+            .year-view-grid {
+                grid-template-columns: repeat(3, 1fr) !important; /* 3 columns for landscape */
+                gap: 1rem;
+                padding: 0;
+                box-shadow: none;
+                background: none;
+            }
+            .year-month-container {
+                page-break-inside: avoid;
+            }
+            .year-month-container h3 {
+                font-size: 14pt;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            .year-month-grid {
+                border: 1px solid #666;
+            }
+            .year-day-header {
+                font-size: 7pt;
+                padding: 2px;
+                background-color: #eee;
+                color: #000;
+                border: 1px solid #999;
+            }
+            .year-day-cell {
+                font-size: 7pt;
+                height: 24px;
+                border: 1px solid #999;
+                padding: 2px;
+            }
+            .year-day-cell .day-num {
+                color: #333;
+            }
+            .year-day-cell.other-month {
+                background-color: #f9f9f9;
+                color: #ccc;
+            }
+            .year-event-dot {
+                width: 6px;
+                height: 6px;
+                bottom: 2px;
+                left: 2px;
+                border: 1px solid #000;
+                 -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            #year-view-legend {
+                page-break-before: always;
+                padding-top: 1in;
+            }
+            .year-legend-item {
+                font-size: 10pt;
+                gap: 8px;
+                page-break-inside: avoid;
+            }
+            .year-legend-dot {
+                width: 12px;
+                height: 12px;
+                border: 1px solid #000;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+        }
     </style>
 </head>
 <body class="text-slate-800">
@@ -126,7 +450,7 @@
                         This tool was developed by Mike Maksimchuk, EdD, Assessment Consultant for Kent ISD. If you have questions, feedback, or suggestions, please do not hesitate to reach out at <a href="mailto:mikemaksimchuk@kentisd.org" class="splash-link">mikemaksimchuk@kentisd.org</a> or 616-447-5667.
                     </p>
                 </div>
-                 
+                
                 <div class="text-xs text-slate-500 pt-4 border-t border-slate-200">
                     <p class="font-semibold">Legal Disclaimer & License</p>
                     <p class="mt-1">
@@ -154,7 +478,7 @@
                     <p class="text-slate-500">Select grades, assessments, and holidays to build your custom visualization.</p>
                 </div>
                 <div> <!-- Upload Button -->
-                    <button id="upload-data-btn" class="action-btn bg-slate-500 whitespace-nowrap">Upload Config</button>
+                    <button id="upload-data-btn" class="action-btn bg-[#0072b8] whitespace-nowrap">Upload Config</button> <!-- Changed color -->
                     <input type="file" id="upload-data-input" class="hidden" accept=".json">
                 </div>
             </div>
@@ -237,33 +561,119 @@
     <!-- Details Modal -->
     <div id="details-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
         <div id="details-modal-content" class="bg-slate-800 text-white w-full max-w-md rounded-2xl shadow-2xl p-6 relative leading-relaxed">
-            <button id="details-modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white">&times;</button>
+            <button id="details-modal-close" class="absolute top-4 right-4 text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
             <div id="details-modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div id="export-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl flex flex-col">
+            <!-- Header -->
+            <div class="p-6 border-b flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-slate-700">Save / Export</h2>
+                <button id="export-modal-close" class="text-slate-400 hover:text-slate-600 text-3xl leading-none">&times;</button>
+            </div>
+            <!-- Body -->
+            <div class="p-6 space-y-4">
+                
+                <!-- Option 1: PDF -->
+                <button id="export-pdf-btn" class="export-option-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-printer" viewBox="0 0 16 16">
+                      <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1"/>
+                      <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4zM1 7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm3 5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">Print / Save as PDF</span>
+                        <p class="text-sm text-slate-500 font-normal">Open print dialog for PDF or paper copies.</p>
+                    </div>
+                </button>
+
+                <!-- Option 2: PNG -->
+                <button id="export-png-btn" class="export-option-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16">
+                      <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                      <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1z"/>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">Save as PNG</span>
+                        <p class="text-sm text-slate-500 font-normal">Download a PNG image (Gantt Chart view only).</p>
+                    </div>
+                </button>
+
+                <!-- Option 3: Data File -->
+                <button id="export-data-btn" class="export-option-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-floppy" viewBox="0 0 16 16">
+                      <path d="M11 2h-6v3h6z"/>
+                      <path d="M1.5 0h11.586a1.5 1.5 0 0 1 1.06.44l1.415 1.414A1.5 1.5 0 0 1 16 2.914V14.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 14.5v-13A1.5 1.5 0 0 1 1.5 0M1 1.5v13a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V2.914a.5.5 0 0 0-.146-.353l-1.415-1.415A.5.5 0 0 0 13.086 1H1.5a.5.5 0 0 0-.5.5m3 4a.5.5 0 0 0 .5.5h5a.5.5 0 0 0 0-1h-5a.5.5 0 0 0-.5.5M7.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">Save Data File (.json)</span>
+                        <p class="text-sm text-slate-500 font-normal">Save your settings. <strong class="text-amber-600">Do this to avoid losing work!</strong></p>
+                    </div>
+                </button>
+                
+                <!-- Option 4: iCal -->
+                <button id="export-ical-btn" class="export-option-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-calendar-plus" viewBox="0 0 16 16">
+                      <path d="M8 7a.5.5 0 0 1 .5.5V9H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V10H6a.5.5 0 0 1 0-1h1.5V7.5A.5.5 0 0 1 8 7"/>
+                      <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4z"/>
+                    </svg>
+                    <div>
+                        <span class="font-semibold">Save as .iCal File</span>
+                        <p class="text-sm text-slate-500 font-normal">Export all events to a calendar (e.g., Google, Outlook).</p>
+                    </div>
+                </button>
+
+            </div>
         </div>
     </div>
 
 
     <!-- Main Content (Initially Hidden) -->
     <div id="main-content" class="container mx-auto p-4 md:p-8 hidden">
-        <header class="flex flex-col sm:flex-row items-center justify-between mb-8 pb-4 border-b border-slate-200">
-            <div class="flex items-center gap-4">
+        <header class="flex flex-col items-center mb-8 pb-4 border-b border-slate-200">
+            <!-- Top Part: Logo and Title -->
+            <div class="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
                 <img src="https://kentisd-cdn.fxbrt.com/downloads/about_kent_isd/kentisd-final-logos_primary-logo-gradient-tag.png" alt="Kent ISD Logo" class="h-14 md:h-16">
                 <div>
                     <h1 class="text-2xl md:text-3xl font-bold text-slate-700">District-Wide Assessment Calendar</h1>
-                    <p class="text-sm md:text-base text-slate-500">2025-2026 Academic Year</p>
+                    <p id="calendar-subtitle" class="text-sm md:text-base text-slate-500">2025-2026 Academic Year</p>
                 </div>
             </div>
-            <div class="flex gap-3 mt-4 sm:mt-0">
-                 <button id="reconfigure-btn" class="action-btn bg-slate-500">Re-configure</button>
-                <button id="save-data-btn" class="export-btn bg-green-600">Download Data</button>
-                <button id="save-png-btn" class="export-btn bg-[#0072b8]">Save as PNG</button>
-                <button id="save-pdf-btn" class="export-btn bg-[#8cc63f]">Save as PDF</button>
+            <!-- Bottom Part: Buttons -->
+            <div id="reconfigure-btn-container" class="flex flex-wrap justify-center gap-3 mt-6">
+                 <select id="view-switcher" class="view-select">
+                    <option value="gantt">Gantt Chart View</option>
+                    <option value="year">Year-at-a-Glance View</option>
+                    <option value="month">Monthly View</option>
+                </select>
+                <button id="reconfigure-btn" class="action-btn">Re-configure</button>
+                <button id="export-btn" class="export-btn">Save / Export</button>
             </div>
         </header>
+
         <main>
             <!-- NEW WARNING DIV -->
-            <div id="visualization-warnings"></div>
-            <div id="visualization" class="gantt-chart-container shadow-lg"></div>
+            <div id="visualization-warnings" class="mb-4"></div>
+            
+            <!-- Gantt Chart View -->
+            <div id="gantt-view" class="gantt-chart-container shadow-lg"></div>
+
+            <!-- Year-at-a-Glance View -->
+            <div id="year-view" class="hidden">
+                <div class="year-view-grid" id="year-view-grid"></div>
+                <div class="mt-8 p-6 bg-white rounded-lg shadow">
+                    <h3 class="font-semibold text-lg text-slate-700 mb-4">Legend</h3>
+                    <div id="year-view-legend" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+                </div>
+            </div>
+
+            <!-- Monthly View -->
+            <div id="month-view" class="hidden space-y-8"></div>
+            
+            <!-- Container for printing -->
+            <div id="print-container" class="hidden"></div>
         </main>
         <footer class="text-center mt-8 pt-4 border-t text-sm text-slate-500">
             <p>If you have questions about this tool or its output, please contact Mike Maksimchuk, Assessment Consultant at Kent ISD, at <a href="mailto:mikemaksimchuk@kentisd.org" class="text-[#0072b8] underline">mikemaksimchuk@kentisd.org</a> or 616-447-5667.</p>
@@ -271,655 +681,1156 @@
     </div>
     
     <script>
-        const { jsPDF } = window.jspdf;
+        // --- DATA ---
+        
+        // Color Palette
+        const categoryColors = {
+            "State Mandated": "#DC2626", // Red-600
+            "College Readiness": "#059669", // Emerald-600
+            "Career Readiness": "#0284C7", // Sky-600
+            "Benchmark": "#D97706", // Amber-600
+            "English Learner": "#6D28D9", // Violet-700
+            "Alternate": "#DB2777", // Pink-600
+            "Local / Custom": "#57534E", // Stone-600
+            "Religious Holiday": "#0F766E", // Teal-700
+            "District Event": "#4B5563"  // Gray-600
+        };
 
         const categorizedAssessments = {
             "State Mandated": [
-                { id: 'mstep_ela_math', grade: '3-7', name: 'M-STEP (ELA, Math)', category: 'State Mandated', startDate: '2026-04-07', endDate: '2026-05-16', subject: 'ELA, Math', duration: 'Varies, approx. 1-2.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
-                { id: 'mstep_sci_ss', grade: '5, 8, 11', name: 'M-STEP (Science, SS)', category: 'State Mandated', startDate: '2026-04-07', endDate: '2026-05-16', subject: 'Science, Social Studies', duration: 'Varies, approx. 1-1.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
+                { id: 'mstep_ela_math', grade: ['3','4','5','6','7'], name: 'M-STEP (ELA, Math)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math', duration: 'Varies, approx. 1-2.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
+                { id: 'mstep_sci_ss', grade: ['5', '8', '11'], name: 'M-STEP (Science, SS)', category: 'State Mandated', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'Science, Social Studies', duration: 'Varies, approx. 1-1.5 hours per subject', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/m-step', definition: 'Michigan Student Test of Educational Progress (M-STEP): A summative assessment for grades 3-7 (ELA/Math) and 5, 8, 11 (Sci/SS) that measures proficiency in state standards.' },
             ],
             "College Readiness & Career": [
-                { id: 'psat89_fall', grade: '8', name: 'PSAT 8/9 (Fall)', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9', definition: 'Preliminary SAT (PSAT) 8/9: A test from the College Board suite that establishes a baseline for college readiness and practice for the SAT.' },
-                { id: 'psat_nmsqt', grade: '10', name: 'PSAT/NMSQT', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-nmsqt', definition: 'Preliminary SAT/National Merit Scholarship Qualifying Test: A practice test for the SAT that also serves as the entry point for the National Merit Scholarship Program for 11th graders (though often offered to 10th graders).' },
-                { id: 'sat_essay', grade: '11', name: 'SAT with Essay', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math, Essay', duration: 'Approx. 3 hours 50 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/sat', definition: 'Scholastic Aptitude Test (SAT): A standardized test widely used for college admissions in the UnitedS. Michigan provides this test free to all 11th graders as part of the Michigan Merit Examination (MME).' },
-                { id: 'win_workplace', grade: '11', name: 'WIN Workplace Assessment', category: 'Career Readiness', subject: 'Career Readiness Skills', duration: 'Varies', startDate: '2026-04-06', endDate: '2026-05-01', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'WIN Workplace Skills Assessment: Measures foundational workplace skills (e.g., Applied Math, Reading for Information). This assessment replaced ACT WorkKeys as part of the MME for 11th graders.' },
-                { id: 'psat89_spring', grade: '8', name: 'PSAT 8/9 (Spring, Gr 8)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9', definition: 'Preliminary SAT (PSAT) 8/9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 8th graders to measure progress toward college readiness.' },
-                { id: 'psat9_spring', grade: '9', name: 'PSAT 8/9 (Spring, Gr 9)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 8/9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 9th graders to measure progress toward college readiness.' },
-                { id: 'psat10_spring', grade: '10', name: 'PSAT 10 (Spring)', category: 'College Readiness', startDate: '2026-04-06', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 10: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 10th graders. It is identical in format to the PSAT/NMSQT.' },
-                { id: 'ap_exams', grade: '9-12', name: 'AP Exams', category: 'College Readiness', startDate: '2026-05-04', endDate: '2026-05-15', subject: 'Varies', duration: 'Varies by exam', resourceLink: 'https://apstudents.collegeboard.org/exam-calendar', definition: 'Advanced Placement (AP) Exams: Subject-specific exams from the College Board that allow high school students to earn college credit or advanced placement at many universities.' },
-                { id: 'act_sept', grade: '11-12', name: 'ACT (Sept 6, 2025)', category: 'College Readiness', startDate: '2025-09-06', endDate: '2025-09-06', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
-                { id: 'act_oct', grade: '11-12', name: 'ACT (Oct 18, 2025)', category: 'College Readiness', startDate: '2025-10-18', endDate: '2025-10-18', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
-                { id: 'act_dec', grade: '11-12', name: 'ACT (Dec 13, 2025)', category: 'College Readiness', startDate: '2025-12-13', endDate: '2025-12-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
-                { id: 'act_feb', grade: '11-12', name: 'ACT (Feb 14, 2026)', category: 'College Readiness', startDate: '2026-02-14', endDate: '2026-02-14', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
-                { id: 'act_apr', grade: '11-12', name: 'ACT (Apr 11, 2026)', category: 'College Readiness', startDate: '2026-04-11', endDate: '2026-04-11', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
-                { id: 'act_jun', grade: '11-12', name: 'ACT (Jun 13, 2026)', category: 'College Readiness', startDate: '2026-06-13', endDate: '2026-06-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'psat89_fall', grade: ['8'], name: 'PSAT 8/9 (Fall)', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-8-9', definition: 'Preliminary SAT (PSAT) 8/9: A test from the College Board suite that establishes a baseline for college readiness and practice for the SAT.' },
+                { id: 'psat_nmsqt', grade: ['10', '11'], name: 'PSAT/NMSQT', category: 'College Readiness', startDate: '2025-10-01', endDate: '2025-10-31', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://satsuite.collegeboard.org/psat-nmsqt', definition: 'Preliminary SAT/National Merit Scholarship Qualifying Test: A practice test for the SAT that also serves as the entry point for the National Merit Scholarship Program for 11th graders (though often offered to 10th graders).' },
+                { id: 'sat_essay', grade: ['11'], name: 'SAT with Essay', category: 'College Readiness', startDate: '2026-04-14', endDate: '2026-04-16', subject: 'Reading, Writing, Math, Essay', duration: 'Approx. 3 hours 50 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Scholastic Aptitude Test (SAT): A standardized test widely used for college admissions. Michigan provides this test free to all 11th graders as part of the Michigan Merit Examination (MME).' },
+                { id: 'win_workplace', grade: ['11'], name: 'WIN Workplace Assessment', category: 'Career Readiness', subject: 'Career Readiness Skills', duration: 'Varies', startDate: '2026-04-13', endDate: '2026-05-22', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'WIN Workplace Skills Assessment: Measures foundational workplace skills (e.g., Applied Math, Reading for Information). This assessment replaced ACT WorkKeys as part of the MME for 11th graders.' },
+                { id: 'psat89_spring', grade: ['8'], name: 'PSAT 8/9 (Spring, Gr 8)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 8/9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 8th graders to measure progress toward college readiness.' },
+                { id: 'psat9_spring', grade: ['9'], name: 'PSAT 9 (Spring, Gr 9)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'PSAT 9: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 9th graders to measure progress toward college readiness. (Note: This is the PSAT 9, not 8/9).' },
+                { id: 'psat10_spring', grade: ['10'], name: 'PSAT 10 (Spring)', category: 'College Readiness', startDate: '2026-04-13', endDate: '2026-05-01', subject: 'Reading, Writing, Math', duration: 'Approx. 2 hours 45 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mme', definition: 'Preliminary SAT (PSAT) 10: Part of the Michigan Merit Examination (MME) suite, administered in Spring to 10th graders. It is identical in format to the PSAT/NMSQT.' },
+                { id: 'ap_exams', grade: ['9','10','11','12'], name: 'AP Exams', category: 'College Readiness', startDate: '2026-05-04', endDate: '2026-05-15', subject: 'Varies', duration: 'Varies by exam', resourceLink: 'https://apstudents.collegeboard.org/exam-calendar', definition: 'Advanced Placement (AP) Exams: Subject-specific exams from the College Board that allow high school students to earn college credit or advanced placement at many universities.' },
+                { id: 'act_sept', grade: ['11','12'], name: 'ACT (Sept 6, 2025)', category: 'College Readiness', startDate: '2025-09-06', endDate: '2025-09-06', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_oct', grade: ['11','12'], name: 'ACT (Oct 25, 2025)', category: 'College Readiness', startDate: '2025-10-25', endDate: '2025-10-25', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_dec', grade: ['11','12'], name: 'ACT (Dec 13, 2025)', category: 'College Readiness', startDate: '2025-12-13', endDate: '2025-12-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_feb', grade: ['11','12'], name: 'ACT (Feb 7, 2026)', category: 'College Readiness', startDate: '2026-02-07', endDate: '2026-02-07', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_apr', grade: ['11','12'], name: 'ACT (Apr 18, 2026)', category: 'College Readiness', startDate: '2026-04-18', endDate: '2026-04-18', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
+                { id: 'act_jun', grade: ['11','12'], name: 'ACT (Jun 13, 2026)', category: 'College Readiness', startDate: '2026-06-13', endDate: '2026-06-13', subject: 'English, Math, Reading, Science', duration: 'Approx. 3 hours 30 mins', resourceLink: 'https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html', definition: 'American College Testing (ACT): A standardized test used for college admissions. These are optional, national test dates that students register for individually. (Not to be confused with the state-funded SAT).' },
             ],
             "Universal Screeners & Benchmarks": [
-                 { id: 'elm_fall', grade: 'K', name: 'Early Literacy & Math (Fall)', category: 'Benchmark', startDate: '2025-08-25', endDate: '2025-10-24', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment', definition: 'Early Literacy & Mathematics Benchmark (KEO): A required assessment for Kindergarten students in the fall, used to identify potential learning needs.' },
-                 { id: 'nwea_fall', grade: 'K-11', name: 'NWEA MAP Growth (Fall)', category: 'Benchmark', startDate: '2025-09-02', endDate: '2025-09-26', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
-                 { id: 'nwea_winter', grade: 'K-11', name: 'NWEA MAP Growth (Winter)', category: 'Benchmark', startDate: '2026-01-05', endDate: '2026-01-30', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
-                 { id: 'nwea_spring', grade: 'K-8', name: 'NWEA MAP Growth (Spring)', category: 'Benchmark', startDate: '2026-05-04', endDate: '2026-05-29', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
-                 { id: 'dibels', grade: 'K-3', name: 'DIBELS', category: 'Benchmark', subject: 'Early Literacy', duration: 'Approx. 5-10 mins', startDate: '', endDate: '', definition: 'Dynamic Indicators of Basic Early Literacy Skills (DIBELS): A series of short (1-minute) fluency measures used to monitor the development of early literacy and reading skills.'},
-                 { id: 'fastbridge', grade: 'K-12', name: 'FastBridge', category: 'Benchmark', subject: 'Reading, Math, Behavior', duration: 'Varies by module', startDate: '', endDate: '', definition: 'FastBridge: An assessment system for universal screening, progress monitoring, and diagnostics in reading, math, and behavior. One of four state-approved benchmark providers.'},
-                 { id: 'iready', grade: 'K-8', name: 'i-Ready Diagnostic', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 45-60 mins per subject', startDate: '', endDate: '', definition: 'i-Ready Diagnostic: An adaptive benchmark assessment for reading and math that provides a detailed profile of student strengths and weaknesses. One of four state-approved benchmark providers.'},
-                 { id: 'star', grade: 'K-12', name: 'STAR Reading/Math', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 20-30 mins', startDate: '', endDate: '', definition: 'STAR Assessments (Renaissance): Adaptive benchmark assessments for reading and math used for screening and progress monitoring.'},
-                 { id: 'aimsweb', grade: 'K-12', name: 'AIMSwebPlus', category: 'Benchmark', subject: 'Reading, Math', duration: 'Varies by measure', startDate: '', endDate: '', definition: 'AIMSwebPlus: A benchmark and progress monitoring system for reading and math, often using brief, fluency-based measures.'},
-                 { id: 'smarter_balanced', grade: 'K-12', name: 'Smarter Balanced Interim Assessments', category: 'Benchmark', subject: 'ELA, Math', duration: 'Varies', startDate: '', endDate: '', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/interim-assessments', definition: 'Smarter Balanced (SBAC) Interim Assessments: Optional, non-public assessments that provide teachers with actionable data on student progress toward M-STEP proficiency. One of four state-approved benchmark providers.'},
+                 { id: 'elm_fall', grade: ['K'], name: 'Early Literacy & Math (Fall)', category: 'Benchmark', startDate: '2025-08-25', endDate: '2025-10-17', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment', definition: 'Early Literacy & Mathematics Benchmark (KEO): A required assessment for Kindergarten students in the fall, used to identify potential learning needs.' },
+                 { id: 'elm_spring', grade: ['K'], name: 'Early Literacy & Math (Spring)', category: 'Benchmark', startDate: '2026-04-13', endDate: '2026-05-29', subject: 'Reading, Math', duration: 'Untimed, approx. 20-30 mins', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/pre-k-2-assessment', definition: 'Early Literacy & Mathematics Benchmark (KEO): A required assessment for Kindergarten students in the spring, used to measure end-of-year status.' },
+                 { id: 'nwea_fall', grade: ['K','1','2','3','4','5','6','7','8','9','10','11'], name: 'NWEA MAP Growth (Fall)', category: 'Benchmark', startDate: '2025-09-02', endDate: '2025-09-26', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'nwea_winter', grade: ['K','1','2','3','4','5','6','7','8','9','10','11'], name: 'NWEA MAP Growth (Winter)', category: 'Benchmark', startDate: '2026-01-05', endDate: '2026-01-30', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'nwea_spring', grade: ['K','1','2','3','4','5','6','7','8'], name: 'NWEA MAP Growth (Spring)', category: 'Benchmark', startDate: '2026-05-04', endDate: '2026-05-29', subject: 'Reading, Math, Science', duration: 'Untimed, approx. 45-60 mins per subject', resourceLink: 'https://www.nwea.org/the-map-suite/family-toolkit/', definition: 'NWEA MAP Growth: A popular adaptive benchmark assessment used by many districts (typically 3 times a year) to measure student growth and inform instruction. One of four state-approved benchmark providers.' },
+                 { id: 'dibels', grade: ['K','1','2','3'], name: 'DIBELS', category: 'Benchmark', subject: 'Early Literacy', duration: 'Approx. 5-10 mins', startDate: '', endDate: '', definition: 'Dynamic Indicators of Basic Early Literacy Skills (DIBELS): A series of short (1-minute) fluency measures used to monitor the development of early literacy and reading skills.'},
+                 { id: 'fastbridge', grade: ['K','1','2','3','4','5','6','7','8','9','10','11','12'], name: 'FastBridge', category: 'Benchmark', subject: 'Reading, Math, Behavior', duration: 'Varies by module', startDate: '', endDate: '', definition: 'FastBridge: An assessment system for universal screening, progress monitoring, and diagnostics in reading, math, and behavior. One of four state-approved benchmark providers.'},
+                 { id: 'iready', grade: ['K','1','2','3','4','5','6','7','8'], name: 'i-Ready Diagnostic', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 45-60 mins per subject', startDate: '', endDate: '', definition: 'i-Ready Diagnostic: An adaptive benchmark assessment for reading and math that provides a detailed profile of student strengths and weaknesses. One of four state-approved benchmark providers.'},
+                 { id: 'star', grade: ['K','1','2','3','4','5','6','7','8','9','10','11','12'], name: 'STAR Reading/Math', category: 'Benchmark', subject: 'Reading, Math', duration: 'Approx. 20-30 mins', startDate: '', endDate: '', definition: 'STAR Assessments (Renaissance): Adaptive benchmark assessments for reading and math used for screening and progress monitoring.'},
+                 { id: 'aimsweb', grade: ['K','1','2','3','4','5','6','7','8','9','10','11','12'], name: 'AIMSwebPlus', category: 'Benchmark', subject: 'Reading, Math', duration: 'Varies by measure', startDate: '', endDate: '', definition: 'AIMSwebPlus: A benchmark and progress monitoring system for reading and math, often using brief, fluency-based measures.'},
+                 { id: 'smarter_balanced', grade: ['3','4','5','6','7','8'], name: 'Smarter Balanced Interim Assessments', category: 'Benchmark', subject: 'ELA, Math', duration: 'Varies', startDate: '', endDate: '', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/interim-assessments', definition: 'Smarter Balanced (SBAC) Interim Assessments: Optional, non-public assessments that provide teachers with actionable data on student progress toward M-STEP proficiency. One of four state-approved benchmark providers.'},
             ],
             "English Language Proficiency": [
-                 { id: 'wida_screener', grade: 'K-12', name: 'WIDA Screener', category: 'English Learner', startDate: '2025-08-25', endDate: '2026-05-22', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://wida.wisc.edu/assess/screener', definition: 'WIDA Screener: An assessment used to identify new students (K-12) who may be English Learners (ELs) and qualify for language support services.' },
-                { id: 'wida_access', grade: 'K-12', name: 'WIDA ACCESS', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida', definition: 'WIDA ACCESS for ELLs: A summative annual assessment that measures the English language proficiency of identified English Learners (ELs) in speaking, listening, reading, and writing.' },
+                 { id: 'wida_screener', grade: ['K','1','2','3','4','5','6','7','8','9','10','11','12'], name: 'WIDA Screener', category: 'English Learner', startDate: '2025-08-25', endDate: '2026-05-22', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://wida.wisc.edu/assess/screener', definition: 'WIDA Screener: An English language proficiency screening tool given to new students who may be English learners to determine their eligibility for EL services.'},
+                 { id: 'wida_access', grade: ['K','1','2','3','4','5','6','7','8','9','10','11','12'], name: 'WIDA Access', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies by grade level', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida', definition: 'WIDA ACCESS for ELLs: A summative assessment given annually to students identified as English Learners to measure their progress in learning English.'},
+                 { id: 'wida_alt_access', grade: ['1','2','3','4','5','6','7','8','9','10','11','12'], name: 'WIDA Alternate Access', category: 'English Learner', startDate: '2026-02-09', endDate: '2026-03-27', subject: 'English Language Proficiency', duration: 'Varies', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/wida', definition: 'WIDA Alternate ACCESS: An assessment for English learners with the most significant cognitive disabilities, serving as an alternate to the WIDA ACCESS.'},
             ],
             "Alternate Assessments": [
-                { id: 'mi_access', grade: '3-8, 11', name: 'MI-Access', category: 'Alternate Assessment', subject: 'ELA, Math, Science, SS', duration: 'Varies by student', startDate: '2026-04-07', endDate: '2026-05-16', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access', definition: 'Michigan\'s Alternate Assessment Program (MI-Access): A summative assessment for students with significant cognitive disabilities whose IEP teams have determined that M-STEP is not appropriate.'},
+                { id: 'mi_access_fi', grade: ['3','4','5','6','7','8','11'], name: 'MI-Access Functional Independence (FI)', category: 'Alternate', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math, Science, SS', duration: 'Untimed', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access', definition: 'MI-Access (Functional Independence): Michigan\'s alternate assessment for students with significant cognitive impairments whose IEP teams have determined M-STEP is not appropriate. Measures essential life skills.' },
+                { id: 'mi_access_si', grade: ['3','4','5','6','7','8','11'], name: 'MI-Access Supported Independence (SI)', category: 'Alternate', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math, Science, SS', duration: 'Untimed', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access', definition: 'MI-Access (Supported Independence): Michigan\'s alternate assessment for students with significant cognitive impairments. SI bridges the gap between Functional Independence and M-STEP.' },
+                { id: 'mi_access_p', grade: ['3','4','5','6','7','8','11'], name: 'MI-Access Participation (P)', category: 'Alternate', startDate: '2026-04-13', endDate: '2026-05-22', subject: 'ELA, Math, Science, SS', duration: 'Untimed', resourceLink: 'https://www.michigan.gov/mde/services/student-assessment/mi-access', definition: 'MI-Access (Participation): Michigan\'s alternate assessment for students with the most significant cognitive impairments. Measures progress on extended content standards through observation.' },
             ]
         };
-        const allAssessments = Object.values(categorizedAssessments).flat();
 
-        const holidayData = [
-            { name: 'Christmas', religions: ['Christian'], startDate: '2025-12-25', endDate: '2025-12-25', resourceLink: 'https://en.wikipedia.org/wiki/Christmas' },
-            { name: 'Diwali', religions: ['Hindu', 'Sikh', 'Jain'], startDate: '2025-10-21', endDate: '2025-10-21', resourceLink: 'https://en.wikipedia.org/wiki/Diwali' },
-            { name: 'Easter', religions: ['Christian'], startDate: '2026-04-05', endDate: '2026-04-05', resourceLink: 'https://en.wikipedia.org/wiki/Easter' },
-            { name: 'Eid al-Fitr', religions: ['Muslim'], startDate: '2026-03-20', endDate: '2026-03-20', resourceLink: 'https://en.wikipedia.org/wiki/Eid_al-Fitr' },
-            { name: 'Good Friday', religions: ['Christian'], startDate: '2026-04-03', endDate: '2026-04-03', resourceLink: 'https://en.wikipedia.org/wiki/Good_Friday' },
-            { name: 'Hanukkah', religions: ['Jewish'], startDate: '2025-12-14', endDate: '2025-12-22', resourceLink: 'https://en.wikipedia.org/wiki/Hanukkah' },
-            { name: 'Lunar New Year', religions: ['East Asian'], startDate: '2026-02-17', endDate: '2026-02-17', resourceLink: 'https://en.wikipedia.org/wiki/Lunar_New_Year' },
-            { name: 'Naw-Rúz', religions: ['Baháʼí'], startDate: '2026-03-20', endDate: '2026-03-20', resourceLink: 'https://en.wikipedia.org/wiki/Naw-R%C3%BAz' },
-            { name: 'Orthodox Christmas', religions: ['Orthodox Christian', 'Christian'], startDate: '2026-01-07', endDate: '2026-01-07', resourceLink: 'https://en.wikipedia.org/wiki/Christmas#Date_and_cycle' },
-            { name: 'Orthodox Easter', religions: ['Orthodox Christian', 'Christian'], startDate: '2026-04-12', endDate: '2026-04-12', resourceLink: 'https://en.wikipedia.org/wiki/Easter#Eastern_Christianity' },
-            { name: 'Passover', religions: ['Jewish'], startDate: '2026-04-01', endDate: '2026-04-09', resourceLink: 'https://en.wikipedia.org/wiki/Passover' },
-            { name: 'Ramadan Begins', religions: ['Muslim'], startDate: '2026-02-18', endDate: '2026-02-18', resourceLink: 'https://en.wikipedia.org/wiki/Ramadan' },
-            { name: 'Rosh Hashanah', religions: ['Jewish'], startDate: '2025-09-22', endDate: '2025-09-24', resourceLink: 'https://en.wikipedia.org/wiki/Rosh_Hashanah' },
-            { name: 'Vaisakhi', religions: ['Sikh', 'Hindu'], startDate: '2026-04-13', endDate: '2026-04-13', resourceLink: 'https://en.wikipedia.org/wiki/Vaisakhi' },
-            { name: 'Vesak', religions: ['Buddhist'], startDate: '2026-05-01', endDate: '2026-05-01', resourceLink: 'https://en.wikipedia.org/wiki/Vesak' },
-            { name: 'Yom Kippur', religions: ['Jewish'], startDate: '2025-10-01', endDate: '2025-10-02', resourceLink: 'https://en.wikipedia.org/wiki/Yom_Kippur' },
+        const grades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+        
+        const allHolidays = [
+            { id: 'baha_i', religion: "Bahá'í", name: 'Birth of Bahá\'u\'lláh', startDate: '2025-10-26', endDate: '2025-10-27', definition: 'Celebrates the birthday of Bahá\'u\'lláh, the founder of the Bahá\'í Faith.'},
+            { id: 'buddhism', religion: 'Buddhism', name: 'Bodhi Day', startDate: '2026-01-27', endDate: '2026-01-27', definition: 'Commemorates the day that Siddhartha Gautama attained enlightenment, becoming the Buddha.'},
+            { id: 'christianity_c', religion: 'Christianity', name: 'Christmas', startDate: '2025-12-25', endDate: '2025-12-25', definition: 'Christian holiday celebrating the birth of Jesus Christ.'},
+            { id: 'christianity_e', religion: 'Christianity', name: 'Easter', startDate: '2026-04-05', endDate: '2026-04-05', definition: 'Christian holiday celebrating the resurrection of Jesus Christ. (Note: Date is for Western Christianity).'},
+            { id: 'christianity_gf', religion: 'Christianity', name: 'Good Friday', startDate: '2026-04-03', endDate: '2026-04-03', definition: 'Christian holiday commemorating the crucifixion of Jesus Christ.'},
+            { id: 'hinduism_d', religion: 'Hinduism', name: 'Diwali', startDate: '2025-10-21', endDate: '2025-10-25', definition: 'The Hindu festival of lights, which celebrates the victory of light over darkness and good over evil.'},
+            { id: 'islam_erf', religion: 'Islam', name: 'Eid al-Fitr', startDate: '2026-03-21', endDate: '2026-03-22', definition: '"Festival of Breaking the Fast," marks the end of Ramadan, the Muslim holy month of fasting.'},
+            { id: 'islam_era', religion: 'Islam', name: 'Eid al-Adha', startDate: '2026-05-28', endDate: '2026-05-29', definition: '"Festival of the Sacrifice," honors the willingness of Ibrahim (Abraham) to sacrifice his son as an act of obedience to God.'},
+            { id: 'jainism_p', religion: 'Jainism', name: 'Paryushana', startDate: '2025-08-23', endDate: '2025-08-30', definition: 'An 8-day festival of fasting, repentance, and meditation for Jains.'},
+            { id: 'judaism_rh', religion: 'Judaism', name: 'Rosh Hashanah', startDate: '2025-09-23', endDate: '2025-09-24', definition: 'The Jewish New Year, a time of prayer and self-reflection. (Starts at sundown on Sept 22).'},
+            { id: 'judaism_yk', religion: 'Judaism', name: 'Yom Kippur', startDate: '2025-10-02', endDate: '2025-10-02', definition: 'The Day of Atonement, the holiest day in Judaism, marked by fasting and prayer. (Starts at sundown on Oct 1).'},
+            { id: 'judaism_p', religion: 'Judaism', name: 'Passover', startDate: '2026-04-02', endDate: '2026-04-09', definition: 'Commemorates the liberation of the Israelites from slavery in ancient Egypt. (Starts at sundown on Apr 1).'},
+            { id: 'sikhism_v', religion: 'Sikhism', name: 'Vaisakhi', startDate: '2026-04-14', endDate: '2026-04-14', definition: 'Sikh New Year and the anniversary of the founding of the Khalsa (the Sikh community).'},
+            { id: 'sikhism_gg', religion: 'Sikhism', name: 'Birthday of Guru Nanak', startDate: '2025-11-15', endDate: '2025-11-15', definition: 'Celebrates the birth of the first Sikh Guru, Guru Nanak.'}
         ];
         
         // Define category-level definitions
         const categoryDefinitions = {
             "State Mandated": "Assessments required by the state of Michigan, such as M-STEP and components of the Michigan Merit Examination (MME).",
-            "College Readiness & Career": "Assessments designed to measure a student's preparedness for post-secondary education or the workforce, such as the SAT, PSAT, and AP Exams.",
-            "Universal Screeners & Benchmarks": "Assessments (often given 3x/year) used to check all students' progress, identify those at risk, and inform instruction. Michigan requires districts to use one of four approved providers.",
-            "English Language Proficiency": "Assessments specifically for students identified as English Learners (ELs) to measure their progress in acquiring English (WIDA ACCESS) or to identify them for services (WIDA Screener).",
-            "Alternate Assessments": "Assessments designed for students with the most significant cognitive disabilities for whom general assessments are not appropriate, as determined by an IEP team."
+            "College Readiness": "Assessments designed to measure a student's preparedness for post-secondary education or the workforce, such as the SAT, PSAT, and AP Exams.",
+            "Career Readiness": "Assessments related to workforce readiness and foundational career skills, such as the WIN Workplace Assessment.",
+            "Benchmark": "Assessments (often given 3x/year) used to check all students' progress, identify those at risk, and inform instruction. Michigan requires districts to use one of four approved providers.",
+            "English Learner": "Assessments specifically for students identified as English Learners (ELs) to measure their progress in acquiring English (WIDA ACCESS) or to identify them for services (WIDA Screener).",
+            "Alternate": "Assessments designed for students with the most significant cognitive disabilities for whom general assessments are not appropriate, as determined by an IEP team."
         };
 
-        let otherAssessments = [];
-        let districtEvents = []; // Array for district events
+        const otherAssessments = [];
+        const districtEvents = [];
+        
+        // --- GLOBAL STATE ---
+        // To store the data used to generate the current visualization
+        let currentChartData = [];
+        let currentViewStartDate;
+        let currentViewEndDate;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            populateModalFilters();
-            setupEventListeners();
-        });
 
-        function createTooltip(text) {
-            if (!text) return '';
-            return `<span class="tooltip-container">
-                        <span class="font-normal">&#9432;</span>
-                        <span class="tooltip-text">${text}</span>
-                    </span>`;
+        // --- DOM Elements ---
+        const splashModal = document.getElementById('splash-modal');
+        const setupModal = document.getElementById('setup-modal');
+        const detailsModal = document.getElementById('details-modal');
+        const exportModal = document.getElementById('export-modal');
+        const mainContent = document.getElementById('main-content');
+        
+        const gradeFiltersContainer = document.getElementById('grade-filters');
+        const assessmentFiltersContainer = document.getElementById('assessment-filters');
+        
+        const includeHolidays = document.getElementById('include-holidays');
+        const holidayFiltersContainer = document.getElementById('holiday-filters-container');
+        const holidayFilters = document.getElementById('holiday-filters');
+
+        const includeLocalAssessments = document.getElementById('include-local-assessments');
+        const localAssessmentsContainer = document.getElementById('local-assessments-container');
+        const otherAssessmentName = document.getElementById('other-assessment-name');
+        const otherAssessmentStart = document.getElementById('other-assessment-start');
+        const otherAssessmentEnd = document.getElementById('other-assessment-end');
+        const otherAssessmentsList = document.getElementById('other-assessments-list');
+        
+        const includeDistrictEvents = document.getElementById('include-district-events');
+        const districtEventsContainer = document.getElementById('district-events-container');
+        const districtEventName = document.getElementById('district-event-name');
+        const districtEventStart = document.getElementById('district-event-start');
+        const districtEventEnd = document.getElementById('district-event-end');
+        const districtEventsList = document.getElementById('district-events-list');
+
+        const viewSwitcher = document.getElementById('view-switcher');
+        const ganttView = document.getElementById('gantt-view');
+        const yearView = document.getElementById('year-view');
+        const monthView = document.getElementById('month-view');
+        const printContainer = document.getElementById('print-container');
+        const calendarSubtitle = document.getElementById('calendar-subtitle');
+
+        // --- UTILITY FUNCTIONS ---
+        
+        /**
+         * Parses a YYYY-MM-DD string into a Date object at UTC midnight.
+         * This is crucial to avoid timezone offset issues.
+         */
+        function parseDateUTC(dateString) {
+            if (!dateString) return null;
+            const parts = dateString.split('-');
+            // Note: Months are 0-indexed in JS (0=Jan, 11=Dec)
+            return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
         }
 
-        function populateModalFilters() {
-            const gradeFilters = document.getElementById('grade-filters');
-            const assessmentFilters = document.getElementById('assessment-filters');
-            const holidayFilters = document.getElementById('holiday-filters');
+        /**
+         * Formats a Date object to YYYY-MM-DD string.
+         */
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
+        }
 
-            const grades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-            grades.forEach(g => {
-                gradeFilters.innerHTML += `<label class="flex items-center cursor-pointer text-slate-700"><input type="checkbox" class="grade-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${g}">
-                <span class="ml-2">${g}</span></label>`;
+        /**
+         * Creates a DOM element with classes and text.
+         */
+        function createElement(tag, classNames = [], text = '') {
+            const el = document.createElement(tag);
+            el.classList.add(...classNames);
+            if (text) {
+                el.textContent = text;
+            }
+            return el;
+        }
+
+        // --- SETUP MODAL LOGIC ---
+
+        function initSetupModal() {
+            // 1. Populate Grades
+            gradeFiltersContainer.innerHTML = '';
+            grades.forEach(grade => {
+                const label = createElement('label', ['flex', 'items-center', 'gap-2', 'p-2', 'rounded-lg', 'hover:bg-slate-100', 'cursor-pointer']);
+                const checkbox = createElement('input', ['grade-filter', 'h-4', 'w-4', 'rounded', 'border-gray-300', 'text-[#0072b8]', 'focus:ring-[#0072b8]']);
+                checkbox.type = 'checkbox';
+                checkbox.value = grade;
+                checkbox.addEventListener('change', updateAssessmentAvailability);
+                label.appendChild(checkbox);
+                label.appendChild(createElement('span', [], grade));
+                gradeFiltersContainer.appendChild(label);
             });
 
+            // 2. Populate Assessments
+            assessmentFiltersContainer.innerHTML = '';
             for (const category in categorizedAssessments) {
-                const categoryTooltip = createTooltip(categoryDefinitions[category]);
-                let categoryHtml = `<div class="mb-3"><h4 class="font-medium text-md text-slate-500 mb-2">${category} ${categoryTooltip}</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">`;
-                categorizedAssessments[category].forEach(a => {
-                    const itemTooltip = createTooltip(a.definition);
-                    const dateInputs = `
-                        <div class="assessment-date-inputs hidden pl-6 mt-1 flex items-center gap-2">
-                            <input type="date" id="start-${a.id}" class="date-input text-sm" value="${a.startDate || ''}">
-                            <span class="text-slate-400">-</span>
-                            <input type="date" id="end-${a.id}" class="date-input text-sm" value="${a.endDate || ''}">
-                        </div>`;
-                    categoryHtml += `
-                        <div>
-                            <label class="flex items-start cursor-pointer text-slate-700">
-                                <input type="checkbox" class="assessment-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8] mt-0.5" value="${a.id}">
-                                <span class="ml-2">${a.name} (Grades: ${a.grade}) ${itemTooltip}</span>
-                            </label>
-                            ${dateInputs}
-                        </div>`;
+                const categoryDiv = createElement('div', ['assessment-category-container']);
+                const categoryHeader = createElement('h4', ['font-medium', 'mb-2', 'text-slate-500', 'border-b', 'pb-1'], category);
+                categoryDiv.appendChild(categoryHeader);
+                
+                categorizedAssessments[category].forEach(assessment => {
+                    const label = createElement('label', ['flex', 'items-center', 'gap-2', 'cursor-pointer', 'p-1', 'rounded', 'hover:bg-slate-50']);
+                    const checkbox = createElement('input', ['assessment-filter', 'h-4', 'w-4', 'rounded', 'border-gray-300', 'text-[#0072b8]', 'focus:ring-[#0072b8]']);
+                    checkbox.type = 'checkbox';
+                    checkbox.id = `filter-${assessment.id}`;
+                    checkbox.value = assessment.id;
+                    checkbox.dataset.grades = JSON.stringify(assessment.grade);
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(createElement('span', [], assessment.name));
+                    
+                    if(assessment.definition) {
+                        const tooltip = createElement('span', ['tooltip-container'], 'ⓘ');
+                        tooltip.appendChild(createElement('span', ['tooltip-text'], assessment.definition));
+                        label.appendChild(tooltip);
+                    }
+                    
+                    categoryDiv.appendChild(label);
                 });
-                categoryHtml += `</div></div>`;
-                assessmentFilters.innerHTML += categoryHtml;
+                assessmentFiltersContainer.appendChild(categoryDiv);
             }
+
+            // 3. Populate Holidays
+            holidayFilters.innerHTML = '';
+            const religions = [...new Set(allHolidays.map(h => h.religion))].sort();
+            religions.forEach(religion => {
+                const label = createElement('label', ['flex', 'items-center', 'gap-2', 'p-1', 'rounded', 'hover:bg-slate-50', 'cursor-pointer']);
+                const checkbox = createElement('input', ['holiday-filter', 'h-4', 'w-4', 'rounded', 'border-gray-300', 'text-[#0072b8]', 'focus:ring-[#0072b8]']);
+                checkbox.type = 'checkbox';
+                checkbox.value = religion;
+                label.appendChild(checkbox);
+                label.appendChild(createElement('span', ['text-sm'], religion));
+                holidayFilters.appendChild(label);
+            });
             
-            const holidayReligions = [...new Set(holidayData.flatMap(d => d.religions))].sort(); // <-- Sorted alphabetically
-            holidayReligions.forEach(r => {
-                holidayFilters.innerHTML += `<label class="flex items-center cursor-pointer text-slate-700"><input type="checkbox" class="holiday-filter h-4 w-4 rounded border-gray-300 text-[#0072b8] focus:ring-[#0072b8]" value="${r}">
-                <span class="ml-2">${r}</span></label>`;
+            // 4. Add Event Listeners for Toggles
+            includeHolidays.addEventListener('change', () => {
+                holidayFiltersContainer.classList.toggle('hidden', !includeHolidays.checked);
+            });
+            
+            includeLocalAssessments.addEventListener('change', () => {
+                localAssessmentsContainer.classList.toggle('hidden', !includeLocalAssessments.checked);
+            });
+            
+            includeDistrictEvents.addEventListener('change', () => {
+                districtEventsContainer.classList.toggle('hidden', !includeDistrictEvents.checked);
+            });
+
+            // 5. Add Event Listeners for "Add" buttons
+            document.getElementById('add-other-btn').addEventListener('click', addOtherAssessment);
+            document.getElementById('add-district-event-btn').addEventListener('click', addDistrictEvent);
+        }
+
+        // Dynamic Assessment availability
+        function updateAssessmentAvailability() {
+            const selectedGrades = new Set(
+                Array.from(document.querySelectorAll('.grade-filter:checked')).map(cb => cb.value)
+            );
+            
+            // Loop over each category
+            document.querySelectorAll('.assessment-category-container').forEach(categoryDiv => {
+                let visibleAssessmentsInCategory = 0;
+                
+                // Loop over each assessment checkbox within the category
+                categoryDiv.querySelectorAll('label').forEach(label => {
+                    const cb = label.querySelector('.assessment-filter');
+                    if (!cb) return; // Skip category header
+
+                    // If no grades are selected, show everything
+                    if (selectedGrades.size === 0) {
+                        label.classList.remove('hidden');
+                        visibleAssessmentsInCategory++;
+                        return; 
+                    }
+                    
+                    // If grades ARE selected, filter by relevance.
+                    const assessmentGrades = JSON.parse(cb.dataset.grades);
+                    const isRelevant = assessmentGrades.some(g => selectedGrades.has(g));
+                    
+                    label.classList.toggle('hidden', !isRelevant);
+                    
+                    if (isRelevant) {
+                        visibleAssessmentsInCategory++;
+                    } else {
+                        cb.checked = false; // Uncheck if it becomes irrelevant
+                    }
+                });
+                
+                // Hide the category header if no assessments within it are visible
+                categoryDiv.classList.toggle('hidden', visibleAssessmentsInCategory === 0);
             });
         }
         
-        function setupEventListeners(){
-            // Splash Page Proceed Button
-            document.getElementById('splash-proceed-btn').addEventListener('click', () => {
-                document.getElementById('splash-modal').classList.add('hidden');
-                document.getElementById('setup-modal').classList.remove('hidden');
-            });
+        // Add Local Assessment
+        function addOtherAssessment() {
+            const name = otherAssessmentName.value.trim();
+            const start = otherAssessmentStart.value;
+            const end = otherAssessmentEnd.value || start; // Default end date to start date if empty
 
-            // Modal event listeners
-            document.getElementById('include-local-assessments').addEventListener('change', (e) => {
-                document.getElementById('local-assessments-container').classList.toggle('hidden', !e.target.checked);
-            });
-
-            document.getElementById('include-holidays').addEventListener('change', (e) => {
-                document.getElementById('holiday-filters-container').classList.toggle('hidden', !e.target.checked);
-            });
-
-            document.getElementById('include-district-events').addEventListener('change', (e) => {
-                document.getElementById('district-events-container').classList.toggle('hidden', !e.target.checked);
-            });
-
-            document.getElementById('assessment-filters').addEventListener('change', (e) => {
-                if (e.target.classList.contains('assessment-filter')) {
-                    const dateInputs = e.target.closest('div').querySelector('.assessment-date-inputs');
-                    if (dateInputs) {
-                        dateInputs.classList.toggle('hidden', !e.target.checked);
-                    }
-                }
-            });
-
-            document.getElementById('add-other-btn').addEventListener('click', () => {
-                const nameInput = document.getElementById('other-assessment-name');
-                const startInput = document.getElementById('other-assessment-start');
-                const endInput = document.getElementById('other-assessment-end');
-                if (nameInput.value && startInput.value && endInput.value) {
-                    otherAssessments.push({
-                        name: nameInput.value,
-                        startDate: startInput.value,
-                        endDate: endInput.value,
-                        category: 'Local/Custom',
-                        type: 'assessment',
-                        grade: 'Custom'
-                    });
-                    nameInput.value = '';
-                    startInput.value = '';
-                    endInput.value = '';
-                    renderOtherAssessmentsList();
-                } else {
-                    // Replaced alert with a simple console log for the iframe environment
-                    console.warn('Please provide a name, start date, and end date for the custom assessment.');
-                }
-            });
-
-            document.getElementById('add-district-event-btn').addEventListener('click', () => {
-                const nameInput = document.getElementById('district-event-name');
-                const startInput = document.getElementById('district-event-start');
-                const endInput = document.getElementById('district-event-end');
-                if (nameInput.value && startInput.value && endInput.value) {
-                    districtEvents.push({
-                        name: nameInput.value,
-                        startDate: startInput.value,
-                        endDate: endInput.value,
-                        type: 'district-event' // Use a specific type
-                    });
-                    nameInput.value = '';
-                    startInput.value = '';
-                    endInput.value = '';
-                    renderDistrictEventsList();
-                } else {
-                    console.warn('Please provide a name, start date, and end date for the district event.');
-                }
-            });
-
-            // Add event listener for deleting other assessments (using event delegation)
-            document.getElementById('other-assessments-list').addEventListener('click', (e) => {
-                if (e.target && e.target.classList.contains('delete-other-assessment')) {
-                    const index = parseInt(e.target.dataset.index, 10);
-                    if (!isNaN(index)) {
-                        otherAssessments.splice(index, 1); // Remove the item from the array
-                        renderOtherAssessmentsList(); // Re-render the list
-                    }
-                }
-            });
-
-            // Add event listener for deleting district events (using event delegation)
-            document.getElementById('district-events-list').addEventListener('click', (e) => {
-                if (e.target && e.target.classList.contains('delete-district-event')) {
-                    const index = parseInt(e.target.dataset.index, 10);
-                    if (!isNaN(index)) {
-                        districtEvents.splice(index, 1); // Remove the item from the array
-                        renderDistrictEventsList(); // Re-render the list
-                    }
-                }
-            });
-
-            document.getElementById('generate-calendar-btn').addEventListener('click', () => {
-                updateVisualization();
-                document.getElementById('setup-modal').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-            });
-            
-            // Main content event listeners
-            document.getElementById('reconfigure-btn').addEventListener('click', () => {
-                 document.getElementById('setup-modal').classList.remove('hidden');
-                document.getElementById('main-content').classList.add('hidden');
-            });
-
-            // Details Modal close button
-            document.getElementById('details-modal-close').addEventListener('click', () => {
-                document.getElementById('details-modal').classList.add('hidden');
-            });
-            
-            // Save/Load buttons
-            document.getElementById('save-data-btn').addEventListener('click', downloadDataFile);
-            document.getElementById('upload-data-btn').addEventListener('click', () => {
-                document.getElementById('upload-data-input').click();
-            });
-            document.getElementById('upload-data-input').addEventListener('change', handleDataUpload);
-
-            document.getElementById('save-png-btn').addEventListener('click', () => saveAsPng());
-            document.getElementById('save-pdf-btn').addEventListener('click', () => saveAsPdf());
+            if (name && start) {
+                const newAssessment = {
+                    id: `other_${Date.now()}`,
+                    name: name,
+                    category: 'Local / Custom',
+                    startDate: start,
+                    endDate: end,
+                    // Add other properties as needed
+                    subject: 'N/A',
+                    duration: 'N/A',
+                    definition: 'A locally-defined custom assessment.'
+                };
+                otherAssessments.push(newAssessment);
+                renderOtherAssessmentsList();
+                // Clear inputs
+                otherAssessmentName.value = '';
+                otherAssessmentStart.value = '';
+                otherAssessmentEnd.value = '';
+            }
         }
-
+        
         function renderOtherAssessmentsList() {
-            const listEl = document.getElementById('other-assessments-list');
-            listEl.innerHTML = otherAssessments.map((a, index) => 
-                `<div class="bg-slate-100 p-2 rounded flex justify-between items-center">
-                    <span>✓ ${a.name} (${a.startDate} to ${a.endDate})</span>
-                    <button class="delete-other-assessment text-red-500 hover:text-red-700 font-bold px-2" data-index="${index}" title="Remove assessment">&times;</button>
-                </div>`
-            ).join('');
+            otherAssessmentsList.innerHTML = '';
+            if (otherAssessments.length === 0) {
+                 otherAssessmentsList.innerHTML = '<p class="text-slate-400 italic">No custom assessments added.</p>';
+                 return;
+            }
+            otherAssessments.forEach((item, index) => {
+                const div = createElement('div', ['flex', 'justify-between', 'items-center', 'p-2', 'bg-slate-100', 'rounded']);
+                div.textContent = `${item.name} (${item.startDate} to ${item.endDate})`;
+                const removeBtn = createElement('button', ['text-red-500', 'hover:text-red-700', 'font-bold'], 'Remove');
+                removeBtn.onclick = () => {
+                    otherAssessments.splice(index, 1);
+                    renderOtherAssessmentsList();
+                };
+                div.appendChild(removeBtn);
+                otherAssessmentsList.appendChild(div);
+            });
+        }
+        
+        // Add District Event
+        function addDistrictEvent() {
+            const name = districtEventName.value.trim();
+            const start = districtEventStart.value;
+            const end = districtEventEnd.value || start;
+
+            if (name && start) {
+                const newEvent = {
+                    id: `district_${Date.now()}`,
+                    name: name,
+                    category: 'District Event',
+                    startDate: start,
+                    endDate: end,
+                    definition: `District Event: ${name}`
+                };
+                districtEvents.push(newEvent);
+                renderDistrictEventsList();
+                // Clear inputs
+                districtEventName.value = '';
+                districtEventStart.value = '';
+                districtEventEnd.value = '';
+            }
         }
 
         function renderDistrictEventsList() {
-            const listEl = document.getElementById('district-events-list');
-            listEl.innerHTML = districtEvents.map((a, index) => 
-                `<div class="bg-slate-100 p-2 rounded flex justify-between items-center">
-                    <span>✓ ${a.name} (${a.startDate} to ${a.endDate})</span>
-                    <button class="delete-district-event text-red-500 hover:text-red-700 font-bold px-2" data-index="${index}" title="Remove event">&times;</button>
-                </div>`
-            ).join('');
+            districtEventsList.innerHTML = '';
+             if (districtEvents.length === 0) {
+                 districtEventsList.innerHTML = '<p class="text-slate-400 italic">No district events added.</p>';
+                 return;
+            }
+            districtEvents.forEach((item, index) => {
+                const div = createElement('div', ['flex', 'justify-between', 'items-center', 'p-2', 'bg-slate-100', 'rounded']);
+                div.textContent = `${item.name} (${item.startDate} to ${item.endDate})`;
+                const removeBtn = createElement('button', ['text-red-500', 'hover:text-red-700', 'font-bold'], 'Remove');
+                removeBtn.onclick = () => {
+                    districtEvents.splice(index, 1);
+                    renderDistrictEventsList();
+                };
+                div.appendChild(removeBtn);
+                districtEventsList.appendChild(div);
+            });
         }
 
-        function parseGrade(gradeStr) {
-            // This function is no longer used by updateVisualization, 
-            // but is kept for potential future use or data parsing.
-            if (!gradeStr) return [];
-            if (gradeStr.includes('-')) {
-                const parts = gradeStr.split('-');
-                const start = parts[0] === 'K' ? 0 : parseInt(parts[0]);
-                const end = parseInt(parts[1]);
-                let grades = [];
-                for (let i = start; i <= end; i++) {
-                    grades.push(i === 0 ? 'K' : i.toString());
-                }
-                return grades;
-            }
-            if (gradeStr.toLowerCase() === 'all' || gradeStr.toLowerCase() === 'k-12') {
-                return ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-            }
-            return gradeStr.split(',').map(s => s.trim());
-        }
+        // --- DATA COLLECTION & VISUALIZATION ---
 
-        function updateVisualization() {
-            const selectedAssessmentIds = Array.from(document.querySelectorAll('.assessment-filter:checked')).map(el => el.value);
+        function collectData() {
+            // 1. Get view range
+            currentViewStartDate = parseDateUTC(document.getElementById('view-range-start').value);
+            currentViewEndDate = parseDateUTC(document.getElementById('view-range-end').value);
             
-            let itemsWithMissingDates = [];
+            // Set calendar subtitle
+            calendarSubtitle.textContent = `${currentViewStartDate.getUTCFullYear()}-${currentViewEndDate.getUTCFullYear()} Academic Year`;
 
-            let finalData = allAssessments.filter(a => selectedAssessmentIds.includes(a.id)).map(a => {
-                const startDate = document.getElementById(`start-${a.id}`).value;
-                const endDate = document.getElementById(`end-${a.id}`).value;
-                if (startDate && endDate) {
-                    return {...a, startDate, endDate, type: 'assessment'}; // Add type
-                }
-                itemsWithMissingDates.push(a.name); // Add to warning list
-                return null;
-            }).filter(Boolean); // remove any assessments where the user didn't provide dates
-            
-            // --- GRADE FILTER REMOVED ---
-            // The logic now shows all selected assessments regardless of grade.
-            
-            const includeLocal = document.getElementById('include-local-assessments').checked;
-            if (includeLocal) {
-                 // Check dates for local assessments
-                 otherAssessments.forEach(a => {
-                    if(a.startDate && a.endDate) {
-                        finalData.push(a); // 'a' already has type: 'assessment'
-                    } else {
-                        itemsWithMissingDates.push(a.name);
-                    }
-                 });
-            }
+            // 2. Get selected grades
+            const selectedGrades = new Set(
+                Array.from(document.querySelectorAll('.grade-filter:checked')).map(cb => cb.value)
+            );
 
-            const includeHolidays = document.getElementById('include-holidays').checked;
-            if (includeHolidays) {
-                const selectedReligions = Array.from(document.querySelectorAll('.holiday-filter:checked')).map(el => el.value);
-                const filteredHolidays = holidayData
-                    .filter(d => d.religions.some(r => selectedReligions.includes(r)))
-                    .map(d => ({...d, name: d.name, type: 'holiday'}));
-                finalData = [...finalData, ...filteredHolidays];
-            }
-            
-            // Add district events
-            const includeDistrictEvents = document.getElementById('include-district-events').checked;
-            if (includeDistrictEvents) {
-                // We map them here to ensure they have the correct 'type' property
-                districtEvents.forEach(e => {
-                    if(e.startDate && e.endDate) {
-                        finalData.push(e); // 'e' already has type: 'district-event'
-                    } else {
-                        itemsWithMissingDates.push(e.name);
-                    }
+            // 3. Get selected assessments
+            const selectedAssessmentIds = new Set(
+                Array.from(document.querySelectorAll('.assessment-filter:checked')).map(cb => cb.value)
+            );
+
+            let data = [];
+            for (const category in categorizedAssessments) {
+                const assessments = categorizedAssessments[category].filter(assessment => {
+                    if (!selectedAssessmentIds.has(assessment.id)) return false;
+                    
+                    // If no grades are selected, include all selected assessments
+                    if (selectedGrades.size === 0) return true;
+                    
+                    // Otherwise, check for grade match
+                    return assessment.grade.some(g => selectedGrades.has(g));
                 });
+                data.push(...assessments);
+            }
+            
+            // 4. Add local assessments if box is checked
+            if (includeLocalAssessments.checked) {
+                data.push(...otherAssessments);
+            }
+            
+            // 5. Add district events if box is checked
+            if (includeDistrictEvents.checked) {
+                data.push(...districtEvents);
             }
 
-            // --- Update Warning Area ---
-            const warningEl = document.getElementById('visualization-warnings');
-            if (itemsWithMissingDates.length > 0) {
-                warningEl.innerHTML = `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4 rounded-md shadow-sm">
-                    <p class="font-bold">Items Not Displayed</p>
-                    <p>The following items were checked but are missing a start or end date and have been hidden: ${itemsWithMissingDates.join(', ')}</p>
-                </div>`;
+            // 6. Get selected holidays
+            if (includeHolidays.checked) {
+                const selectedReligions = new Set(
+                    Array.from(document.querySelectorAll('.holiday-filter:checked')).map(cb => cb.value)
+                );
+                
+                const holidays = allHolidays.filter(holiday => selectedReligions.has(holiday.religion))
+                                        .map(h => ({ ...h, category: 'Religious Holiday' }));
+                data.push(...holidays);
+            }
+
+            // 7. Parse dates and filter by view range
+            currentChartData = data
+                .map(d => ({
+                    ...d,
+                    start: parseDateUTC(d.startDate),
+                    end: parseDateUTC(d.endDate || d.startDate) // Ensure end date exists
+                }))
+                .filter(d => d.start && d.end) // Ensure dates are valid
+                .filter(d => {
+                    // Filter out events that end before the view starts or start after the view ends
+                    return d.end >= currentViewStartDate && d.start <= currentViewEndDate;
+                });
+                
+            // 8. Sort data: by category, then start date
+            currentChartData.sort((a, b) => {
+                if (a.category < b.category) return -1;
+                if (a.category > b.category) return 1;
+                if (a.start < b.start) return -1;
+                if (a.start > b.start) return 1;
+                return 0;
+            });
+            
+            return currentChartData;
+        }
+
+        function generateCalendar() {
+            collectData();
+            
+            if (currentChartData.length === 0) {
+                 document.getElementById('visualization-warnings').innerHTML = `
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg" role="alert">
+                      <p class="font-bold">No Data</p>
+                      <p>No assessments, holidays, or events match your selected criteria. Please adjust your selections in the "Re-configure" menu.</p>
+                    </div>`;
             } else {
-                warningEl.innerHTML = ''; // Clear warnings
+                 document.getElementById('visualization-warnings').innerHTML = '';
             }
 
-            finalData.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-            const viewStart = document.getElementById('view-range-start').value;
-            const viewEnd = document.getElementById('view-range-end').value;
-            renderGanttChart(finalData, viewStart, viewEnd);
+            // Show/Hide Modals and Main Content
+            setupModal.classList.add('hidden', 'opacity-0');
+            mainContent.classList.remove('hidden');
+            
+            // Render the currently selected view
+            switchView(viewSwitcher.value, true);
         }
         
-        function renderGanttChart(data, viewStart, viewEnd) {
-            const container = d3.select("#visualization");
-            container.html("");
+        function switchView(view, isInitialLoad = false) {
+             // Hide all views
+            ganttView.classList.add('hidden');
+            yearView.classList.add('hidden');
+            monthView.classList.add('hidden');
+            ganttView.innerHTML = ''; // Clear views to force redraw
+            yearView.innerHTML = '';
+            monthView.innerHTML = '';
+            printContainer.innerHTML = ''; // Clear print container
 
-            if (data.length === 0) {
-                container.append("div").attr("class", "text-center p-10 text-slate-500").text("No data to display. Click 'Re-configure' to change selections.");
+            if (view === 'gantt') {
+                ganttView.classList.remove('hidden');
+                drawGanttChart();
+            } else if (view === 'year') {
+                yearView.classList.remove('hidden');
+                drawYearAtAGlance();
+            } else if (view === 'month') {
+                monthView.classList.remove('hidden');
+                drawMonthlyViews();
+            }
+            
+            // Update export button state if needed (e.g., disable PNG for non-Gantt)
+            // const exportPngBtn = document.getElementById('export-png-btn');
+            // exportPngBtn.disabled = (view !== 'gantt');
+            // const pngP = exportPngBtn.querySelector('p');
+            // pngP.textContent = (view !== 'gantt') ? 'Download a PNG image (Only for Gantt Chart view)' : 'Download a PNG image (Gantt Chart view only).';
+        }
+
+        // --- GANTT CHART (d3.js) ---
+        function drawGanttChart() {
+            const data = currentChartData;
+            ganttView.innerHTML = ''; // Clear previous chart
+            
+            const margin = { top: 30, right: 50, bottom: 50, left: 250 };
+            const rowHeight = 30;
+            const rowPadding = 10;
+            const totalRowHeight = rowHeight + rowPadding;
+            const height = (data.length * totalRowHeight) + margin.top + margin.bottom;
+            
+            // Use clientWidth for responsiveness
+            const containerWidth = ganttView.clientWidth;
+            const width = Math.max(containerWidth, 1200); // Minimum width
+            
+            const svg = d3.select("#gantt-view").append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("style", "max-width: 100%; height: auto; font: 12px 'Inter', sans-serif;");
+
+            const chart = svg.append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            const innerWidth = width - margin.left - margin.right;
+            
+            // Clamp dates to the view range for visualization
+            const clampedData = data.map(d => ({
+                ...d,
+                visStart: new Date(Math.max(d.start.getTime(), currentViewStartDate.getTime())),
+                visEnd: new Date(Math.min(d.end.getTime(), currentViewEndDate.getTime()))
+            }));
+
+            // Time Scale (x-axis)
+            const xScale = d3.scaleTime()
+                .domain([currentViewStartDate, currentViewEndDate])
+                .range([0, innerWidth]);
+
+            // Y-axis (Task Names)
+            const yScale = d3.scaleBand()
+                .domain(data.map(d => d.name))
+                .range([0, data.length * totalRowHeight])
+                .padding(0.1);
+
+            // X-Axis (Months)
+            const xAxis = d3.axisTop(xScale)
+                .ticks(d3.timeMonth.every(1))
+                .tickFormat(d3.timeFormat("%b '%y"))
+                .tickSize(height - margin.top - margin.bottom)
+                .tickPadding(10);
+
+            const xAxisGroup = chart.append("g")
+                .attr("class", "x-axis")
+                .attr("transform", `translate(0, ${height - margin.top - margin.bottom})`)
+                .call(xAxis);
+            
+            xAxisGroup.selectAll(".tick line")
+                .attr("stroke", "#e2e8f0"); // slate-200
+            xAxisGroup.selectAll(".tick text")
+                .attr("fill", "#64748b") // slate-500
+                .attr("y", -10); // Position above the top line
+            xAxisGroup.select(".domain").remove(); // Remove the main axis line
+
+            // Y-Axis (Labels)
+            const yAxis = d3.axisLeft(yScale)
+                .tickSize(0)
+                .tickPadding(10);
+
+            const yAxisGroup = chart.append("g")
+                .attr("class", "y-axis")
+                .call(yAxis);
+                
+            yAxisGroup.select(".domain").remove();
+            yAxisGroup.selectAll(".tick text")
+                .attr("fill", "#334155") // slate-700
+                .style("font-weight", "500")
+                .call(wrapText, margin.left - 10); // Wrap text function
+
+            // Create groups for each bar
+            const groups = chart.selectAll("g.bar-group")
+                .data(clampedData)
+                .enter().append("g")
+                .attr("class", "bar-group")
+                .attr("transform", d => `translate(0, ${yScale(d.name)})`)
+                .style("cursor", "pointer")
+                .on("click", (event, d) => showDetailsModal(d));
+
+            // Add the bars
+            groups.append("rect")
+                .attr("x", d => xScale(d.visStart))
+                .attr("y", (rowPadding / 2))
+                .attr("width", d => Math.max(1, xScale(d.visEnd) - xScale(d.visStart))) // Min width 1px
+                .attr("height", rowHeight)
+                .attr("fill", d => categoryColors[d.category] || "#94a3b8")
+                .attr("rx", 6)
+                .attr("ry", 6)
+                .style("opacity", 0.85)
+                .transition().duration(500)
+                .attr("width", d => Math.max(1, xScale(d.visEnd) - xScale(d.visStart)));
+
+            // Add text labels on bars
+            groups.append("text")
+                .attr("x", d => xScale(d.visStart) + 5)
+                .attr("y", (totalRowHeight / 2) + 1) // Centered
+                .attr("dy", "0.35em")
+                .attr("fill", "white")
+                .style("font-size", "11px")
+                .style("font-weight", "500")
+                .text(d => {
+                    const barWidth = Math.max(1, xScale(d.visEnd) - xScale(d.visStart));
+                    // Simple check to see if text fits
+                    return (barWidth > (d.name.length * 6)) ? d.name : '';
+                });
+        }
+        
+        // --- YEAR-AT-A-GLANCE ---
+        function drawYearAtAGlance() {
+            yearView.innerHTML = ''; // Clear
+            const gridContainer = createElement('div', ['year-view-grid']);
+            gridContainer.id = 'year-view-grid';
+            
+            const legendContainer = createElement('div', ['mt-8', 'p-6', 'bg-white', 'rounded-lg', 'shadow']);
+            legendContainer.innerHTML = '<h3 class="font-semibold text-lg text-slate-700 mb-4">Legend</h3>';
+            const legendGrid = createElement('div', ['grid', 'grid-cols-2', 'md:grid-cols-3', 'lg:grid-cols-4', 'gap-3']);
+            legendGrid.id = 'year-view-legend';
+            legendContainer.appendChild(legendGrid);
+
+            yearView.appendChild(gridContainer);
+            yearView.appendChild(legendContainer);
+            
+            const legendItems = new Map();
+
+            const startMonth = currentViewStartDate.getUTCMonth();
+            const startYear = currentViewStartDate.getUTCFullYear();
+            const endMonth = currentViewEndDate.getUTCMonth();
+            const endYear = currentViewEndDate.getUTCFullYear();
+
+            let date = new Date(Date.UTC(startYear, startMonth, 1));
+            const endDate = new Date(Date.UTC(endYear, endMonth, 1));
+
+            while (date <= endDate) {
+                const month = date.getUTCMonth();
+                const year = date.getUTCFullYear();
+                const monthContainer = createElement('div', ['year-month-container']);
+                
+                const monthHeader = createElement('h3', ['text-lg', 'font-semibold', 'text-slate-700', 'mb-2'],
+                    date.toLocaleString('default', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+                );
+                monthContainer.appendChild(monthHeader);
+
+                const monthGrid = createElement('div', ['year-month-grid']);
+                const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+                daysOfWeek.forEach(day => {
+                    monthGrid.appendChild(createElement('div', ['year-day-header'], day));
+                });
+                
+                const firstDayOfMonth = new Date(Date.UTC(year, month, 1)).getUTCDay(); // 0=Sun, 1=Mon...
+                const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+                
+                // Add empty cells for days before the 1st
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    monthGrid.appendChild(createElement('div', ['year-day-cell', 'other-month']));
+                }
+
+                // Add cells for each day
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = createElement('div', ['year-day-cell']);
+                    cell.appendChild(createElement('span', ['day-num'], day));
+                    
+                    const currentDay = new Date(Date.UTC(year, month, day));
+                    
+                    // Find events for this day
+                    const eventsToday = getEventsForDay(currentDay);
+                    
+                    if (eventsToday.length > 0) {
+                        const dot = createElement('div', ['year-event-dot']);
+                        // Use the color of the first event for the dot
+                        const color = categoryColors[eventsToday[0].category] || '#94a3b8';
+                        dot.style.backgroundColor = color;
+                        cell.appendChild(dot);
+                        
+                        // Add events to legend
+                        eventsToday.forEach(event => {
+                            if (!legendItems.has(event.name)) {
+                                legendItems.set(event.name, event.category);
+                            }
+                        });
+                    }
+                    
+                    monthGrid.appendChild(cell);
+                }
+                
+                monthContainer.appendChild(monthGrid);
+                gridContainer.appendChild(monthContainer);
+                
+                date.setUTCMonth(date.getUTCMonth() + 1); // Move to next month
+            }
+            
+            // Populate Legend
+            const sortedLegend = new Map([...legendItems.entries()].sort());
+            sortedLegend.forEach((category, name) => {
+                const item = createElement('div', ['year-legend-item']);
+                const dot = createElement('div', ['year-legend-dot']);
+                dot.style.backgroundColor = categoryColors[category] || '#94a3b8';
+                item.appendChild(dot);
+                item.appendChild(createElement('span', [], name));
+                legendGrid.appendChild(item);
+            });
+        }
+        
+        // --- MONTHLY VIEW ---
+        function drawMonthlyViews() {
+            monthView.innerHTML = ''; // Clear
+
+            const startMonth = currentViewStartDate.getUTCMonth();
+            const startYear = currentViewStartDate.getUTCFullYear();
+            const endMonth = currentViewEndDate.getUTCMonth();
+            const endYear = currentViewEndDate.getUTCFullYear();
+
+            let date = new Date(Date.UTC(startYear, startMonth, 1));
+            const endDate = new Date(Date.UTC(endYear, endMonth, 1));
+
+            while (date <= endDate) {
+                const month = date.getUTCMonth();
+                const year = date.getUTCFullYear();
+                const monthContainer = createElement('div', ['month-view-container', 'bg-white', 'p-6', 'rounded-lg', 'shadow-lg']);
+                
+                const monthHeader = createElement('h2', ['text-2xl', 'font-bold', 'text-slate-800', 'mb-4', 'text-center'],
+                    date.toLocaleString('default', { month: 'long', 'year': 'numeric', timeZone: 'UTC' })
+                );
+                monthContainer.appendChild(monthHeader);
+
+                const monthGrid = createElement('div', ['calendar-grid']);
+                const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                daysOfWeek.forEach(day => {
+                    monthGrid.appendChild(createElement('div', ['calendar-day-header'], day));
+                });
+                
+                const firstDayOfMonth = new Date(Date.UTC(year, month, 1)).getUTCDay();
+                const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+                
+                // Get days from previous month
+                const prevMonthEndDate = new Date(Date.UTC(year, month, 0));
+                const prevMonthDays = prevMonthEndDate.getUTCDate();
+                const prevMonthStartDay = prevMonthDays - firstDayOfMonth + 1;
+
+                // Add empty cells for days before the 1st
+                for (let i = 0; i < firstDayOfMonth; i++) {
+                    const day = prevMonthStartDay + i;
+                    const cell = createElement('div', ['calendar-day', 'other-month']);
+                    cell.appendChild(createElement('span', ['calendar-day-num'], day));
+                    monthGrid.appendChild(cell);
+                }
+
+                // Add cells for each day
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const cell = createElement('div', ['calendar-day']);
+                    cell.appendChild(createElement('span', ['calendar-day-num'], day));
+                    
+                    const currentDay = new Date(Date.UTC(year, month, day));
+                    const eventsToday = getEventsForDay(currentDay);
+                    
+                    eventsToday.forEach(event => {
+                        const eventEl = createElement('div', ['calendar-event'], event.name);
+                        eventEl.style.backgroundColor = categoryColors[event.category] || '#94a3b8';
+                        eventEl.onclick = () => showDetailsModal(event);
+                        cell.appendChild(eventEl);
+                    });
+                    
+                    monthGrid.appendChild(cell);
+                }
+                
+                // Add cells for next month to fill the grid
+                const totalCells = firstDayOfMonth + daysInMonth;
+                const remainingCells = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
+                for (let i = 1; i <= remainingCells; i++) {
+                     const cell = createElement('div', ['calendar-day', 'other-month']);
+                     cell.appendChild(createElement('span', ['calendar-day-num'], i));
+                     monthGrid.appendChild(cell);
+                }
+                
+                monthContainer.appendChild(monthGrid);
+                monthView.appendChild(monthContainer);
+                
+                date.setUTCMonth(date.getUTCMonth() + 1); // Move to next month
+            }
+        }
+        
+        /**
+         * Helper to get all events for a specific day (UTC)
+         */
+        function getEventsForDay(day) {
+            const dayTime = day.getTime();
+            return currentChartData.filter(event => {
+                const startTime = event.start.getTime();
+                const endTime = event.end.getTime();
+                return dayTime >= startTime && dayTime <= endTime;
+            });
+        }
+        
+        // --- DETAILS MODAL ---
+        function showDetailsModal(d) {
+            const body = document.getElementById('details-modal-body');
+            body.innerHTML = ''; // Clear previous content
+
+            // Title
+            const title = createElement('h3', ['text-xl', 'font-bold', 'mb-2'], d.name);
+            body.appendChild(title);
+
+            // Category
+            const category = createElement('p', ['text-sm', 'font-medium', 'mb-4']);
+            category.innerHTML = `<strong>Category:</strong> <span style="color: ${categoryColors[d.category] || '#FFF'}">${d.category}</span>`;
+            body.appendChild(category);
+
+            // Dates
+            const dates = createElement('p', ['text-sm', 'mb-2']);
+            const dateString = (d.startDate === d.endDate) ? d.startDate : `${d.startDate} to ${d.endDate}`;
+            dates.innerHTML = `<strong>Dates:</strong> ${dateString}`;
+            body.appendChild(dates);
+
+            // Definition
+            if (d.definition) {
+                const definition = createElement('p', ['text-sm', 'mb-2']);
+                definition.innerHTML = `<strong>About:</strong> ${d.definition}`;
+                body.appendChild(definition);
+            }
+            
+            // Subject & Duration
+            if (d.subject) {
+                const subject = createElement('p', ['text-sm', 'mb-2']);
+                subject.innerHTML = `<strong>Subject:</strong> ${d.subject}`;
+                body.appendChild(subject);
+            }
+            if (d.duration) {
+                const duration = createElement('p', ['text-sm', 'mb-2']);
+                duration.innerHTML = `<strong>Duration:</strong> ${d.duration}`;
+                body.appendChild(duration);
+            }
+
+            // Resource Link
+            if (d.resourceLink) {
+                const link = createElement('p', ['text-sm', 'mt-4']);
+                link.innerHTML = `<strong>More Info:</strong> <a href="${d.resourceLink}" target="_blank">Visit Resource Page</a>`;
+                body.appendChild(link);
+            }
+
+            detailsModal.classList.remove('hidden');
+        }
+        
+        // --- TEXT WRAPPING for D3 ---
+        function wrapText(text, width) {
+            text.each(function () {
+                let text = d3.select(this),
+                    words = text.text().split(/\s+/).reverse(),
+                    word,
+                    line = [],
+                    lineNumber = 0,
+                    lineHeight = 1.1, // ems
+                    y = text.attr("y"),
+                    dy = parseFloat(text.attr("dy") || 0),
+                    tspan = text.text(null).append("tspan").attr("x", -10).attr("y", y).attr("dy", dy + "em");
+                while (word = words.pop()) {
+                    line.push(word);
+                    tspan.text(line.join(" "));
+                    if (tspan.node().getComputedTextLength() > width) {
+                        line.pop();
+                        tspan.text(line.join(" "));
+                        line = [word];
+                        tspan = text.append("tspan").attr("x", -10).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word);
+                    }
+                }
+            });
+        }
+
+
+        // --- EXPORT & SAVE FUNCTIONS ---
+        
+        function getSaveConfig() {
+            const config = {
+                viewRangeStart: document.getElementById('view-range-start').value,
+                viewRangeEnd: document.getElementById('view-range-end').value,
+                selectedGrades: Array.from(document.querySelectorAll('.grade-filter:checked')).map(cb => cb.value),
+                selectedAssessments: Array.from(document.querySelectorAll('.assessment-filter:checked')).map(cb => cb.value),
+                includeHolidays: includeHolidays.checked,
+                selectedReligions: Array.from(document.querySelectorAll('.holiday-filter:checked')).map(cb => cb.value),
+                includeLocal: includeLocalAssessments.checked,
+                localAssessments: otherAssessments,
+                includeDistrict: includeDistrictEvents.checked,
+                districtEvents: districtEvents
+            };
+            return config;
+        }
+
+        // 1. Save PNG
+        document.getElementById('export-png-btn').addEventListener('click', () => {
+            const currentView = viewSwitcher.value;
+            if (currentView !== 'gantt') {
+                // We show a warning but still allow the click, as requested.
+                console.warn("PNG export is only available for the Gantt Chart view.");
+                // Optionally, we could show a more user-facing message.
+            }
+            
+            const svgElement = document.querySelector("#gantt-view svg");
+            if (svgElement) {
+                saveSvgAsPng.saveSvgAsPng(svgElement, "assessment_calendar.png", { 
+                    backgroundColor: "#f8fafc" 
+                }); 
+            } else {
+                console.error("Could not find SVG element to export.");
+            }
+            exportModal.classList.add('hidden');
+        });
+
+        // 2. Save PDF / Print
+        document.getElementById('export-pdf-btn').addEventListener('click', () => {
+            // Defer loading library until it's needed
+            const { jsPDF } = window.jspdf;
+            if (!jsPDF) {
+                console.error("jsPDF library is not loaded.");
                 return;
             }
 
-            const margin = { top: 50, right: 30, bottom: 40, left: 220 };
-            const containerWidth = document.getElementById('visualization').clientWidth;
-            const width = Math.max(containerWidth, 900) - margin.left - margin.right;
-            const itemHeight = 20; // Changed from 30
-            const itemMargin = 8; // Changed from 10
-            const height = data.length * (itemHeight + itemMargin);
+            const currentView = viewSwitcher.value;
+            printContainer.innerHTML = ''; // Clear print container
             
-            const svg = container.append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
-            
-            // Add a white background to the SVG for PNG export
-            svg.append("rect")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("transform", `translate(${-margin.left},${-margin.top})`)
-                .attr("fill", "#ffffff");
+            if (currentView === 'gantt') {
+                // Original PDF export for Gantt
+                const svgElement = document.querySelector("#gantt-view svg");
+                if (!svgElement) return;
 
-            const timeDomain = [new Date(viewStart), new Date(viewEnd)];
-            const xScale = d3.scaleTime().domain(timeDomain).range([0, width]);
-
-            svg.append("g").call(d3.axisTop(xScale).ticks(d3.timeMonth.every(1)).tickFormat(d3.timeFormat("%B"))).selectAll("text").style("font-size", "12px").style("color", "#475569");
-            svg.append("g").attr("class", "grid-lines").selectAll("line").data(xScale.ticks(d3.timeMonth.every(1))).enter().append("line").attr("x1", d => xScale(d)).attr("x2", d => xScale(d)).attr("y1", 0).attr("y2", height).attr("stroke", "#e2e8f0").attr("stroke-width", 1);
-            
-            const detailsModal = document.getElementById('details-modal');
-            const detailsModalBody = document.getElementById('details-modal-body');
-            
-            const kentISDPalette = ['#0072b8', '#8cc63f', '#f58220', '#41b6e6', '#004b8d', '#a9a9a9', '#d45d00'];
-            const categoryDomains = [...new Set(allAssessments.map(d => d.category)), 'Local/Custom'];
-            const colorScale = d3.scaleOrdinal().domain(categoryDomains).range(kentISDPalette);
-
-            svg.selectAll(".bar-group").data(data).enter().append("g")
-                .attr("transform", (d, i) => `translate(0, ${i * (itemHeight + itemMargin)})`)
-                .append("rect")
-                .attr("x", d => xScale(new Date(d.startDate)))
-                .attr("width", d => Math.max(2, xScale(new Date(d.endDate)) - xScale(new Date(d.startDate))))
-                .attr("height", itemHeight).attr("rx", 5).attr("ry", 5)
-                .style("fill", d => {
-                    if (d.type === 'holiday') return '#64748b'; // Slate gray for holidays
-                    if (d.type === 'district-event') return '#a8a29e'; // Stone gray for district events
-                    return colorScale(d.category); // Colors for assessments
-                })
-                .style("opacity", 0.9).style("cursor", "pointer")
-                .on("click", function(event, d) {
-                    let modalContent = `<h3 class="text-xl font-bold mb-4">${d.name}</h3>`;
-                    if (d.grade && d.grade !== 'Custom') modalContent += `<p><strong>Grade(s):</strong> ${d.grade}</p>`;
-                    if (d.category) modalContent += `<p><strong>Category:</strong> ${d.category}</p>`;
-                    if (d.subject) modalContent += `<p><strong>Subject:</strong> ${d.subject}</p>`;
-                    if (d.duration) modalContent += `<p><strong>Duration:</strong> ${d.duration}</p>`;
-                    if (d.religions) modalContent += `<p><strong>Observed by:</strong> ${d.religions.join(', ')}</p>`;
-                    modalContent += `<p><strong>Window:</strong> ${new Date(d.startDate).toLocaleDateString()} - ${new Date(d.endDate).toLocaleDateString()}</p>`;
-                    if (d.resourceLink) modalContent += `<p class="mt-2"><a href="${d.resourceLink}" target="_blank">Learn More &raquo;</a></p>`;
-                    
-                    detailsModalBody.innerHTML = modalContent;
-                    detailsModal.classList.remove('hidden');
+                const { width, height } = svgElement.getBBox();
+                const orientation = width > height ? 'l' : 'p';
+                
+                const pdf = new jsPDF(orientation, 'px', [width, height]);
+                pdf.svg(svgElement).then(() => {
+                    pdf.save('assessment_calendar.pdf');
                 });
+                
+            } else if (currentView === 'year') {
+                // Prepare Year view for printing
+                const header = createElement('div', ['year-view-print-header']);
+                header.innerHTML = `<h1>District-Wide Assessment Calendar</h1><h2>${calendarSubtitle.textContent} (Year-at-a-Glance)</h2>`;
+                
+                const grid = document.getElementById('year-view-grid').cloneNode(true);
+                const legend = document.getElementById('year-view-legend').cloneNode(true);
+                
+                const printContent = createElement('div', ['year-view-print-container']);
+                printContent.appendChild(header);
+                printContent.appendChild(grid);
+                printContent.appendChild(createElement('h2', ['font-semibold', 'text-lg', 'mt-8', 'mb-4'], 'Legend'));
+                printContent.appendChild(legend);
+                
+                printContainer.appendChild(printContent);
+                document.getElementById('gantt-view').style.display = 'none';
+                document.getElementById('year-view').style.display = 'none';
+                document.getElementById('month-view').style.display = 'none';
+                
+                window.print();
+                
+                document.getElementById('gantt-view').style.display = (viewSwitcher.value === 'gantt') ? 'block' : 'none';
+                document.getElementById('year-view').style.display = (viewSwitcher.value === 'year') ? 'block' : 'none';
+                document.getElementById('month-view').style.display = (viewSwitcher.value === 'month') ? 'block' : 'none';
 
-            svg.selectAll(".item-label").data(data).enter().append("text")
-                .attr("x", -15).attr("y", (d, i) => i * (itemHeight + itemMargin) + itemHeight / 2)
-                .attr("dy", "0.35em").attr("text-anchor", "end").style("font-size", "12px")
-                .style("fill", "#334155").text(d => d.name)
-                .call(wrap, margin.left - 25);
-        }
-        
-        function wrap(text, width) { text.each(function () { var text = d3.select(this), words = text.text().split(/\s+/).reverse(), word, line = [], lineNumber = 0, lineHeight = 1.1, x = text.attr("x"), y = text.attr("y"), dy = parseFloat(text.attr("dy")), tspan = text.text(null).append("tspan").attr("x", x).attr("y", y).attr("dy", dy + "em"); while (word = words.pop()) { line.push(word); tspan.text(line.join(" ")); if (tspan.node().getComputedTextLength() > width) { line.pop(); tspan.text(line.join(" ")); line = [word]; tspan = text.append("tspan").attr("x", x).attr("y", y).attr("dy", ++lineNumber * lineHeight + dy + "em").text(word); } } }); }
-        
-        // --- Start: New Save/Load Functions ---
-
-        /**
-         * Gathers the current state of all user inputs from the modal.
-         * @returns {object} A configuration object.
-         */
-        function getCurrentConfig() {
-            // 1. Get View Range
-            const viewRangeStart = document.getElementById('view-range-start').value;
-            const viewRangeEnd = document.getElementById('view-range-end').value;
+            } else if (currentView === 'month') {
+                // Prepare Month views for printing
+                const monthPages = document.querySelectorAll('.month-view-container');
+                monthPages.forEach(monthPage => {
+                    const page = createElement('div', ['month-view-print-page']);
+                    page.appendChild(monthPage.cloneNode(true));
+                    printContainer.appendChild(page);
+                });
+                
+                document.getElementById('gantt-view').style.display = 'none';
+                document.getElementById('year-view').style.display = 'none';
+                document.getElementById('month-view').style.display = 'none';
+                
+                window.print();
+                
+                document.getElementById('gantt-view').style.display = (viewSwitcher.value === 'gantt') ? 'block' : 'none';
+                document.getElementById('year-view').style.display = (viewSwitcher.value === 'year') ? 'block' : 'none';
+                document.getElementById('month-view').style.display = (viewSwitcher.value === 'month') ? 'block' : 'none';
+            }
             
-            // 2. Get Selected Grades
-            const selectedGrades = Array.from(document.querySelectorAll('.grade-filter:checked')).map(el => el.value);
-            
-            // 3. Get Selected Assessments and ALL assessment dates
-            const selectedAssessmentIds = Array.from(document.querySelectorAll('.assessment-filter:checked')).map(el => el.value);
-            const assessmentDates = {};
-            allAssessments.forEach(a => {
-                const startInput = document.getElementById(`start-${a.id}`);
-                const endInput = document.getElementById(`end-${a.id}`);
-                if (startInput && endInput) { // Check if inputs exist
-                    assessmentDates[a.id] = {
-                        startDate: startInput.value,
-                        endDate: endInput.value
-                    };
-                }
-            });
+            exportModal.classList.add('hidden');
+        });
 
-            // 4. Get Local Assessments
-            const includeLocalAssessments = document.getElementById('include-local-assessments').checked;
-            // The `otherAssessments` array is already in memory
-
-            // 5. Get Holiday Settings
-            const includeHolidays = document.getElementById('include-holidays').checked;
-            const selectedReligions = Array.from(document.querySelectorAll('.holiday-filter:checked')).map(el => el.value);
-
-            // 6. Get District Events
-            const includeDistrictEvents = document.getElementById('include-district-events').checked;
-
-            return {
-                viewRangeStart,
-                viewRangeEnd,
-                selectedGrades,
-                selectedAssessmentIds,
-                assessmentDates,
-                includeLocalAssessments,
-                localAssessments: otherAssessments, // Save the array directly
-                includeHolidays,
-                selectedReligions,
-                includeDistrictEvents,
-                districtEvents: districtEvents // Save the array
-            };
-        }
-
-        /**
-         * Triggers a browser download of the current config as a JSON file.
-         */
-        function downloadDataFile() {
-            const config = getCurrentConfig();
-            const dataStr = JSON.stringify(config, null, 2); // Pretty-print JSON
-            const dataBlob = new Blob([dataStr], {type: "application/json"});
+        // 3. Save Data (JSON)
+        document.getElementById('export-data-btn').addEventListener('click', () => {
+            const config = getSaveConfig();
+            const dataStr = JSON.stringify(config, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
             
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = "assessment_config.json";
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'assessment_config.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
             URL.revokeObjectURL(url);
-        }
+            
+            exportModal.classList.add('hidden');
+        });
+        
+        // 4. Save iCal
+        document.getElementById('export-ical-btn').addEventListener('click', () => {
+            // Defer loading library until it's needed
+            const { ics } = window;
+            if (!ics) {
+                console.error("ics.js library is not loaded.");
+                return;
+            }
+            
+            if (currentChartData.length === 0) {
+                alert("No data to export. Please generate a calendar first.");
+                return;
+            }
 
-        /**
-         * Handles the file input change event for loading a config file.
-         * @param {Event} event The file input change event.
-         */
-        function handleDataUpload(event) {
+            const cal = ics();
+            
+            currentChartData.forEach(event => {
+                // ics.js expects [YYYY, MM, DD, HH, MM]
+                // Note: ics.js months are 1-indexed
+                const start = [
+                    event.start.getUTCFullYear(),
+                    event.start.getUTCMonth() + 1,
+                    event.start.getUTCDate()
+                ];
+                
+                // For all-day events, the end date should be *the day after* the last day.
+                const endDate = new Date(event.end.getTime());
+                endDate.setUTCDate(endDate.getUTCDate() + 1);
+                
+                const end = [
+                    endDate.getUTCFullYear(),
+                    endDate.getUTCMonth() + 1,
+                    endDate.getUTCDate()
+                ];
+                
+                const title = event.name;
+                
+                let description = `Category: ${event.category}\n`;
+                if (event.definition) description += `About: ${event.definition}\n`;
+                if (event.subject) description += `Subject: ${event.subject}\n`;
+                if (event.duration) description += `Duration: ${event.duration}\n`;
+                if (event.resourceLink) description += `More Info: ${event.resourceLink}\n`;
+
+                cal.addEvent(title, description, 'Kent ISD', start, end);
+            });
+
+            cal.download('KentISD_Assessment_Calendar');
+            exportModal.classList.add('hidden');
+        });
+
+
+        // --- EVENT LISTENERS ---
+
+        // Splash Modal
+        document.getElementById('splash-proceed-btn').addEventListener('click', () => {
+            splashModal.classList.add('hidden', 'opacity-0');
+            setupModal.classList.remove('hidden', 'opacity-0');
+        });
+
+        // Setup Modal
+        document.getElementById('generate-calendar-btn').addEventListener('click', generateCalendar);
+        
+        // Upload Config
+        document.getElementById('upload-data-btn').addEventListener('click', () => {
+            document.getElementById('upload-data-input').click();
+        });
+        
+        document.getElementById('upload-data-input').addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-
+            
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const loadedState = JSON.parse(e.target.result);
-                    applyLoadedState(loadedState);
+                    const config = JSON.parse(e.target.result);
+                    
+                    // Restore config
+                    document.getElementById('view-range-start').value = config.viewRangeStart || '2025-08-01';
+                    document.getElementById('view-range-end').value = config.viewRangeEnd || '2026-06-30';
+                    
+                    document.querySelectorAll('.grade-filter').forEach(cb => {
+                        cb.checked = (config.selectedGrades || []).includes(cb.value);
+                    });
+                    
+                    updateAssessmentAvailability(); // Update based on restored grades
+                    
+                    document.querySelectorAll('.assessment-filter').forEach(cb => {
+                        cb.checked = (config.selectedAssessments || []).includes(cb.value);
+                    });
+                    
+                    includeHolidays.checked = config.includeHolidays;
+                    holidayFiltersContainer.classList.toggle('hidden', !config.includeHolidays);
+                    document.querySelectorAll('.holiday-filter').forEach(cb => {
+                        cb.checked = (config.selectedReligions || []).includes(cb.value);
+                    });
+
+                    includeLocalAssessments.checked = config.includeLocal;
+                    localAssessmentsContainer.classList.toggle('hidden', !config.includeLocal);
+                    otherAssessments.length = 0; // Clear array
+                    otherAssessments.push(...(config.localAssessments || []));
+                    renderOtherAssessmentsList();
+                    
+                    includeDistrictEvents.checked = config.includeDistrict;
+                    districtEventsContainer.classList.toggle('hidden', !config.includeDistrict);
+                    districtEvents.length = 0; // Clear array
+                    districtEvents.push(...(config.districtEvents || []));
+                    renderDistrictEventsList();
+
                 } catch (err) {
-                    console.error("Failed to parse config file:", err);
-                    console.warn("Could not load file. Please make sure it is a valid .json config file.");
+                    console.error("Error parsing config file:", err);
+                    alert("There was an error reading the configuration file. It may be corrupted.");
                 }
             };
             reader.readAsText(file);
-            // Clear the input value to allow re-uploading the same file
-            event.target.value = null;
-        }
+            // Reset file input so 'change' event fires even if same file is re-uploaded
+            event.target.value = null; 
+        });
 
-        /**
-         * Applies a loaded configuration state to the setup modal.
-         * @param {object} state The loaded configuration object.
-         */
-        function applyLoadedState(state) {
-            if (!state) return;
-
-            // 1. Set View Range
-            if (state.viewRangeStart) document.getElementById('view-range-start').value = state.viewRangeStart;
-            if (state.viewRangeEnd) document.getElementById('view-range-end').value = state.viewRangeEnd;
-
-            // 2. Set Selected Grades
-            if (state.selectedGrades) {
-                document.querySelectorAll('.grade-filter').forEach(cb => {
-                    cb.checked = state.selectedGrades.includes(cb.value);
-                });
-            }
-
-            // 3. Set Assessments and their dates
-            if (state.assessmentDates) {
-                allAssessments.forEach(a => {
-                    const stateForId = state.assessmentDates[a.id];
-                    if (stateForId) {
-                        document.getElementById(`start-${a.id}`).value = stateForId.startDate;
-                        document.getElementById(`end-${a.id}`).value = stateForId.endDate;
-                    }
-                });
-            }
-            if (state.selectedAssessmentIds) {
-                document.querySelectorAll('.assessment-filter').forEach(cb => {
-                    cb.checked = state.selectedAssessmentIds.includes(cb.value);
-                    // Also trigger the show/hide for the date inputs
-                    const dateInputs = cb.closest('div').querySelector('.assessment-date-inputs');
-                    if (dateInputs) {
-                        dateInputs.classList.toggle('hidden', !cb.checked);
-                    }
-                });
-            }
-
-            // 4. Set Local Assessments
-            if (state.localAssessments) {
-                otherAssessments = state.localAssessments;
-                document.getElementById('include-local-assessments').checked = state.includeLocalAssessments;
-                document.getElementById('local-assessments-container').classList.toggle('hidden', !state.includeLocalAssessments);
-                renderOtherAssessmentsList();
-            }
-
-            // 5. Set Holiday Settings
-            if (state.selectedReligions) {
-                document.getElementById('include-holidays').checked = state.includeHolidays;
-                document.getElementById('holiday-filters-container').classList.toggle('hidden', !state.includeHolidays);
-                document.querySelectorAll('.holiday-filter').forEach(cb => {
-                    cb.checked = state.selectedReligions.includes(cb.value);
-                });
-            }
-
-            // 6. Set District Events
-            if (state.districtEvents) {
-                districtEvents = state.districtEvents;
-                document.getElementById('include-district-events').checked = state.includeDistrictEvents;
-                document.getElementById('district-events-container').classList.toggle('hidden', !state.includeDistrictEvents);
-                renderDistrictEventsList();
-            }
-            
-            console.log("Successfully loaded configuration.");
-        }
+        // Main Content Buttons
+        document.getElementById('reconfigure-btn').addEventListener('click', () => {
+            mainContent.classList.add('hidden');
+            setupModal.classList.remove('hidden', 'opacity-0');
+        });
         
-        // --- End of New Save/Load Functions ---
+        // View Switcher
+        viewSwitcher.addEventListener('change', (e) => switchView(e.target.value));
 
-        function saveAsPng(){ 
-            const svgElement = document.querySelector("#visualization svg"); 
-            if(svgElement){ 
-                saveSvgAsPng(svgElement, "assessment-calendar.png", { 
-                    backgroundColor: "#ffffff", 
-                    scale: 2 
-                }); 
-            } else { 
-                console.warn("Could not find visualization to save."); 
-            } 
-        }
+        // Export Modal
+        document.getElementById('export-btn').addEventListener('click', () => {
+            exportModal.classList.remove('hidden');
+        });
+        document.getElementById('export-modal-close').addEventListener('click', () => {
+            exportModal.classList.add('hidden');
+        });
         
-        async function saveAsPdf() { 
-            const svgElement = document.querySelector("#visualization svg"); 
-            if (!svgElement) { 
-                console.warn("Could not find visualization to save."); 
-                return; 
-            } 
-            try { 
-                // Get the full size of the SVG content, not just the viewport
-                const svgBounds = svgElement.getBBox();
-                const fullWidth = svgBounds.x + svgBounds.width + 50; // Add some padding
-                const fullHeight = svgBounds.y + svgBounds.height + 50; // Add some padding
+        // Details Modal
+        document.getElementById('details-modal-close').addEventListener('click', () => {
+            detailsModal.classList.add('hidden');
+        });
 
-                // Use the full size for the data URL generation
-                const dataUrl = await saveSvgAsPng.svgAsDataUri(svgElement, { 
-                    backgroundColor: "#ffffff", 
-                    scale: 2, // Increase scale for better PDF quality
-                    width: fullWidth,
-                    height: fullHeight
-                }); 
-                
-                // Determine orientation based on the full size
-                const orientation = fullWidth > fullHeight ? 'l' : 'p'; 
-                const doc = new jsPDF(orientation, 'px', [fullWidth, fullHeight]); 
-                
-                const imgWidth = doc.internal.pageSize.getWidth(); 
-                const imgHeight = doc.internal.pageSize.getHeight(); 
-                
-                doc.addImage(dataUrl, 'PNG', 0, 0, imgWidth, imgHeight); 
-                doc.save("assessment-calendar.pdf"); 
-            } catch (e) { 
-                console.error("Error saving PDF:", e); 
-                console.warn("An error occurred while saving the PDF."); 
-            } 
-        }
+        // --- INITIALIZATION ---
+        initSetupModal();
+        renderOtherAssessmentsList();
+        renderDistrictEventsList();
+        
     </script>
 </body>
 </html>
